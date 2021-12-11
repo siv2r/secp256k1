@@ -130,6 +130,8 @@ static void secp256k1_sha256_transform(uint32_t* s, const uint32_t* chunk) {
 }
 
 static void secp256k1_sha256_write(secp256k1_sha256 *hash, const unsigned char *data, size_t len) {
+    /*
+    TODO: what does this line do? */
     size_t bufsize = hash->bytes & 0x3F;
     hash->bytes += len;
     VERIFY_CHECK(hash->bytes >= len);

@@ -6509,37 +6509,10 @@ void run_cmov_tests(void) {
     ge_storage_cmov_test();
 }
 
+#include "modules/debug/main_impl.h"
+
 int main(int argc, char **argv) {
-    /* Disable buffering for stdout to improve reliability of getting
-     * diagnostic information. Happens right at the start of main because
-     * setbuf must be used before any other operation on the stream. */
-    setbuf(stdout, NULL);
-    /* Also disable buffering for stderr because it's not guaranteed that it's
-     * unbuffered on all systems. */
-    setbuf(stderr, NULL);
 
-    /* find iteration count */
-    if (argc > 1) {
-        count = strtol(argv[1], NULL, 0);
-    } else {
-        const char* env = getenv("SECP256K1_TEST_ITERS");
-        if (env && strlen(env) > 0) {
-            count = strtol(env, NULL, 0);
-        }
-    }
-    if (count <= 0) {
-        fputs("An iteration count of 0 or less is not allowed.\n", stderr);
-        return EXIT_FAILURE;
-    }
-    /* printf("test count = %i\n", count); */
-
-    /* find random seed */
-    /* secp256k1_testrand_init(argc > 2 ? argv[2] : NULL); */
-
-    /* initialize */
-    /* run_context_tests(0);
-    run_context_tests(1);
-    run_scratch_tests(); */
     ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
     if (secp256k1_testrand_bits(1)) {
         unsigned char rand32[32];
@@ -6547,68 +6520,10 @@ int main(int argc, char **argv) {
         CHECK(secp256k1_context_randomize(ctx, secp256k1_testrand_bits(1) ? rand32 : NULL));
     }
 
-    /* run_rand_bits();
-    run_rand_int(); */
-
-    /* run_ctz_tests();
-    run_modinv_tests();
-    run_inverse_tests(); */
-
-    /*run_sha256_tests();
-    run_hmac_sha256_tests();
-    run_rfc6979_hmac_sha256_tests();
-    run_tagged_sha256_tests(); */
-
-    /* scalar tests */
-    /* run_scalar_tests(); */
-
-    /* field tests */
-    /* run_field_misc();
-    run_field_convert();
-    run_fe_mul();
-    run_sqr();
-    run_sqrt(); */
-
-    /* group tests */
-    /* run_ge();
-    run_group_decompress(); */
-
-    /* ecmult tests */
-/*  run_ecmult_pre_g();
-    run_wnaf();
-    run_point_times_order();
-    run_ecmult_near_split_bound();
-    run_ecmult_chain();
-    run_ecmult_constants();
-    run_ecmult_gen_blind();
-    run_ecmult_const_tests();
-    run_ecmult_multi_tests();
-    run_ec_combine(); */
-
-    /* endomorphism tests */
-    /* run_endomorphism_tests(); */
-
-    /* EC point parser test */
-    /* run_ec_pubkey_parse_test(); */
-
-    /* EC key edge cases */
-    /* run_eckey_edge_case_test(); */
-
-    /* EC key arithmetic test */
-    /* run_eckey_negate_test(); */
-
 #ifdef ENABLE_MODULE_ECDH
     /* ecdh tests */
     run_ecdh_tests();
 #endif
-
-    /* ecdsa tests */
-/*     run_pubkey_comparison();
-    run_random_pubkeys();
-    run_ecdsa_der_parse();
-    run_ecdsa_sign_verify();
-    run_ecdsa_end_to_end();
-    run_ecdsa_edge_cases(); */
 
 #ifdef ENABLE_MODULE_RECOVERY
     /* ECDSA pubkey recovery tests */
@@ -6627,9 +6542,34 @@ int main(int argc, char **argv) {
     /*TODO: Check the doc mismatch... */
     /*TODO: Schnorr tweak exists?? */
 
+    /* 
+    TODO:
+    2. why output not matching?
+    2. review pr 731 */
+    unsigned char msg[40] = "Hey, this message is going to be hashed";
+    unsigned char out[32];
+    secp256k1_sha256 hash;
+
+    printf("message        : %s\n", msg);
+
+    secp256k1_sha256_initialize(&hash);
+    printf("sha256 (init)  : ");
+    print_sha(&hash);
+
+    secp256k1_sha256_write(&hash, msg, 40);
+    printf("sha256 (write) : ");
+    print_sha(&hash);
+
+    secp256k1_sha256_finalize(&hash, out);
+    printf("sha256         : ");
+    print_sha(&hash);
+
+    printf("out            : ");
+    print_buf(out, 32);
+
     /* shutdown */
     secp256k1_context_destroy(ctx);
 
-    printf("no problems found\n");
+    /* printf("no problems found\n"); */
     return 0;
 }

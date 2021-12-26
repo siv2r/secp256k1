@@ -11,6 +11,14 @@
 #include "scalar.h"
 #include "scratch.h"
 
+//TODO: window size?
+//TODO: ecmult precomputation? why and how? 
+//TODO: error directive? i.e., # error error_message_without_quotes
+//TODO: 0*G == 0 or 1?
+//TODO: why R = na*A + ng*G? why not R = na*A?
+//TODO: Try calling this API's (display output)
+//TODO: strauss wnaf for ec multiplication?
+
 /* Noone will ever need more than a window size of 24. The code might
  * be correct for larger values of ECMULT_WINDOW_SIZE but this is not
  * tested.

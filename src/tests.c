@@ -6542,29 +6542,6 @@ int main(int argc, char **argv) {
     /*TODO: Check the doc mismatch... */
     /*TODO: Schnorr tweak exists?? */
 
-    /* 
-    TODO:
-    2. review pr 731 */
-    unsigned char msg[40] = "Hey, this message is going to be hashed";
-    unsigned char out[32];
-    secp256k1_sha256 hash;
-
-    printf("message          : %s\n", msg);
-
-    secp256k1_sha256_initialize(&hash);
-    printf("sha256 (init)    : ");
-    print_sha(&hash);
-
-    secp256k1_sha256_write(&hash, msg, 39);
-    printf("sha256 (write)   : ");
-    print_sha(&hash);
-
-    secp256k1_sha256_finalize(&hash, out);
-    printf("sha256 (finalize): ");
-    print_sha(&hash);
-
-    printf("out              : ");
-    print_buf(out, 32);
     /* shutdown */
     secp256k1_context_destroy(ctx);
 

@@ -29,11 +29,15 @@ static void print_ge(secp256k1_ge *p) {
     print_buf(buf33, 33);
 }
 
+#ifdef ENABLE_MODULE_SCHNORRSIG
+
 static void print_xonly(const secp256k1_context *ctx, const secp256k1_xonly_pubkey *p) {
     unsigned char buf32[32];
     secp256k1_xonly_pubkey_serialize(ctx, buf32, p);
     print_buf(buf32, 32);
 }
+
+#endif /* ENABLE_MODULE_SCHNORRSIG */
 
 static void print_pubkey(const secp256k1_context *ctx, const secp256k1_pubkey *p) {
     unsigned char buf[33];

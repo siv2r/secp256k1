@@ -6519,6 +6519,51 @@ int main(int argc, char **argv) {
         secp256k1_testrand256(rand32);
         CHECK(secp256k1_context_randomize(ctx, secp256k1_testrand_bits(1) ? rand32 : NULL));
     }
+    /*
+    TODO: ecmult
+    print na
+    print A
+    *A + A
+    *2*A
+    *R = na*A
+    print R
+
+    */
+    int overflow = 0;
+    unsigned char na_val[32];
+    secp256k1_scalar na;
+    secp256k1_ge gen = SECP256K1_G;
+    secp256k1_gej genj;
+
+    secp256k1_testrand256(na_val);
+    secp256k1_scalar_set_b32(&na, na_val, &overflow);
+    CHECK(!overflow);
+
+    printf("ng_val      :");
+    print_buf(na_val, 32);
+    printf("\n");
+
+    printf("ng (scalar1):");
+    print_scalar(&na);
+    printf("\n");
+
+    printf("G           :");
+    print_ge(&gen);
+    secp256k1_gej_set_ge(&genj, &gen);
+    printf("G (jacobian):");
+    print_gej(&gen);
+    printf("\n");
+
+
+
+    /*
+    TODO: ecmult_gen
+    */
+
+
+    /*
+    TODO: ecmult_const
+    */
 
 #ifdef ENABLE_MODULE_ECDH
     /* ecdh tests */
@@ -6538,9 +6583,11 @@ int main(int argc, char **argv) {
     run_schnorrsig_tests();
 #endif
 
-    /*TODO: Run ECDSA tweak tests here */
-    /*TODO: Check the doc mismatch... */
-    /*TODO: Schnorr tweak exists?? */
+    /*
+    TODO: Run ECDSA tweak tests here
+    TODO: Check the doc mismatch...
+    TODO: Schnorr tweak exists??
+    */
 
     /* shutdown */
     secp256k1_context_destroy(ctx);

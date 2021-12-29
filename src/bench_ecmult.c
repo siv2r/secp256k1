@@ -230,6 +230,7 @@ static void bench_ecmult_multi_teardown(void* arg, int iters) {
     }
 }
 
+/* set a 32 bytes value (depends on num) to scalar */
 static void generate_scalar(uint32_t num, secp256k1_scalar* scalar) {
     secp256k1_sha256 sha256;
     unsigned char c[10] = {'e', 'c', 'm', 'u', 'l', 't', 0, 0, 0, 0};
@@ -277,11 +278,13 @@ static void run_ecmult_multi_bench(bench_data* data, size_t count, int includes_
     }
     run_benchmark(str, bench_ecmult_multi, bench_ecmult_multi_setup, bench_ecmult_multi_teardown, data, 10, count * iters);
 }
-
+/*
+TODO: bench_data??
+*/
 int main(int argc, char **argv) {
     bench_data data;
     int i, p;
-    size_t scratch_size;
+    size_t scratch_size; /* Note: scratch space size declared */
 
     int iters = get_iters(10000);
 
@@ -317,6 +320,9 @@ int main(int argc, char **argv) {
     }
 
     /* Allocate stuff */
+    /*
+    TODO: why no typecast of malloc here?
+    */
     data.scalars = malloc(sizeof(secp256k1_scalar) * POINTS);
     data.seckeys = malloc(sizeof(secp256k1_scalar) * POINTS);
     data.pubkeys = malloc(sizeof(secp256k1_ge) * POINTS);

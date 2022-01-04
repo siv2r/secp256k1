@@ -6526,20 +6526,21 @@ int main(int argc, char **argv) {
 
     /*
     TODO: _fe_negate
+    TODO: understand `magnitude` parameter
+    TODO: if don't allocate space for a pointer (i.e. just declare). Can we dereferece it?
+    TODO: understand normalize _fe
     */
-   unsigned char fe_val[32];
-   unsigned char hex_str[] = "aff";
-   unsigned char *hex_buf;
-   int hex_buf_len;
-   hex_str_to_buf(hex_buf, &hex_buf_len, hex_str, 3);
-/*    print_buf(hex_buf, hex_buf_len); */
+    unsigned char fe_val[32];
+    unsigned char hex_str[] = "aff";
+    int hex_buf_len = 0;
+    unsigned char *hex_buf = hex_str_to_buf(&hex_buf_len, hex_str, sizeof(hex_str));
 
 
     /*
     TODO: _fe api's
     TODO: create _fe
     TODO: print _fe value
-    TODO: normalize _fe
+    
 
     /*
     TODO: ecmult

@@ -44,6 +44,56 @@ static void print_fe(const secp256k1_fe *inp) {
     #endif
 }
 
+/*
+*NOTE: `random_fe` function is already present in tests.c (under field tests)
+*/
+
+static unsigned char hex_char_to_buf(const unsigned char inp) {
+
+    if (inp >= '0' && inp <= '9') {
+        return inp - 0;
+    } else if (inp >= 'A' && inp <= 'F') {
+        return inp - 'A' + 10;
+    } else if (inp >= 'a' && inp <= 'f') {
+        return inp - 'a' + 10;
+    }
+
+    return -1;
+}
+
+/* given hex string is stored as big endian bytes in unsinged char */
+/*
+TODO
+*/
+static void hex_str_to_buf(unsigned char *out, int *out_len, const unsigned char *inp, int inp_len) {
+    int i = 0, j= 0, temp = (inp_len + 1)/2; /* output string length */
+    out = malloc(temp*sizeof(unsigned char));
+
+    if (out_len != NULL) {
+        *out_len = temp;
+    }
+
+    if (inp_len % 2) {
+        out[i] = hex_char_to_buf(inp[i]);
+        i++;
+        j++;
+    }
+
+    /* the remaining hex string length will be even */
+    while (i < inp_len && j < temp) {
+        unsigned char low = hex_char_to_buf(inp[i]);
+        unsigned char high = hex_char_to_buf(inp[i]);
+ 
+        out[j] = low | (high << 4);
+        if(high == -1 || low == -1) {
+            fprintf(stderr, "hex string should contain only 0-9,a-f and A-F");
+            return 1;
+        }
+        i += 2;
+        j++;
+    }
+}
+
 static void print_ge(const secp256k1_ge *inp) {
     printf("\n");
     printf("X  : ");

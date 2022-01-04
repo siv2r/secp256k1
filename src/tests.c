@@ -2375,6 +2375,10 @@ void random_fe(secp256k1_fe *x) {
 void random_fe_test(secp256k1_fe *x) {
     unsigned char bin[32];
     do {
+        /*
+        TODO: what is the use of `testrand256_test` function?
+        TODO: check where it is used
+        */
         secp256k1_testrand256_test(bin);
         if (secp256k1_fe_set_b32(x, bin)) {
             return;
@@ -6519,6 +6523,24 @@ int main(int argc, char **argv) {
         secp256k1_testrand256(rand32);
         CHECK(secp256k1_context_randomize(ctx, secp256k1_testrand_bits(1) ? rand32 : NULL));
     }
+
+    /*
+    TODO: _fe_negate
+    */
+   unsigned char fe_val[32];
+   unsigned char hex_str[] = "aff";
+   unsigned char *hex_buf;
+   int hex_buf_len;
+   hex_str_to_buf(hex_buf, &hex_buf_len, hex_str, 3);
+/*    print_buf(hex_buf, hex_buf_len); */
+
+
+    /*
+    TODO: _fe api's
+    TODO: create _fe
+    TODO: print _fe value
+    TODO: normalize _fe
+
     /*
     TODO: ecmult
     print na
@@ -6529,7 +6551,7 @@ int main(int argc, char **argv) {
     print R
 
     */
-    int overflow = 0;
+/*     int overflow = 0;
     unsigned char na_val[32];
     secp256k1_scalar na;
     secp256k1_ge gen = SECP256K1_G;
@@ -6552,7 +6574,7 @@ int main(int argc, char **argv) {
     secp256k1_gej_set_ge(&genj, &gen);
     printf("G (jacobian):");
     print_gej(&gen);
-    printf("\n");
+    printf("\n"); */
 
 
 

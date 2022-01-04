@@ -293,6 +293,9 @@ static int secp256k1_fe_set_b32(secp256k1_fe *r, const unsigned char *a) {
             | ((uint64_t)a[27] << 32)
             | ((uint64_t)a[26] << 40)
             | ((uint64_t)(a[25] & 0xF)  << 48);
+    /*
+    TODO: why not just (uint64_t)(a[25] >> 4)??
+    */
     r->n[1] = (uint64_t)((a[25] >> 4) & 0xF)
             | ((uint64_t)a[24] << 4)
             | ((uint64_t)a[23] << 12)
@@ -320,11 +323,17 @@ static int secp256k1_fe_set_b32(secp256k1_fe *r, const unsigned char *a) {
             | ((uint64_t)a[2] << 24)
             | ((uint64_t)a[1] << 32)
             | ((uint64_t)a[0] << 40);
+    /*
+    *NOTE: checks if r <= p
+    */
     ret = !((r->n[4] == 0x0FFFFFFFFFFFFULL) & ((r->n[3] & r->n[2] & r->n[1]) == 0xFFFFFFFFFFFFFULL) & (r->n[0] >= 0xFFFFEFFFFFC2FULL));
 #ifdef VERIFY
     r->magnitude = 1;
     if (ret) {
         r->normalized = 1;
+        /*
+        TODO: shouldn't this call be outside if block?
+        */
         secp256k1_fe_verify(r);
     } else {
         r->normalized = 0;

@@ -50,6 +50,8 @@ static int secp256k1_fe_normalizes_to_zero(const secp256k1_fe *r);
  *  without constant-time guarantee. */
 static int secp256k1_fe_normalizes_to_zero_var(const secp256k1_fe *r);
 
+/* 
+*NOTE: 0x7FFF is the max value for `short int` (2 bytes signed integer) 
 /** Set a field element equal to a small (not greater than 0x7FFF), non-negative integer.
  *  Resulting field element is normalized; it has magnitude 0 if a == 0, and magnitude 1 otherwise.
  */
@@ -64,6 +66,8 @@ static int secp256k1_fe_is_zero(const secp256k1_fe *a);
 /** Check the "oddness" of a field element. Requires the input to be normalized. */
 static int secp256k1_fe_is_odd(const secp256k1_fe *a);
 
+/*
+*Note: the magnitude of 1 does not imply normality so, it can result in comparing normalized for with a not normalized form?
 /** Compare two field elements. Requires magnitude-1 inputs. */
 static int secp256k1_fe_equal(const secp256k1_fe *a, const secp256k1_fe *b);
 
@@ -83,6 +87,8 @@ static void secp256k1_fe_get_b32(unsigned char *r, const secp256k1_fe *a);
  *  as an argument. The magnitude of the output is one higher. */
 static void secp256k1_fe_negate(secp256k1_fe *r, const secp256k1_fe *a, int m);
 
+/*
+* why small int const? we don't want the result value to cross 2^64 limit?
 /** Multiplies the passed field element with a small integer constant. Multiplies the magnitude by that
  *  small integer. */
 static void secp256k1_fe_mul_int(secp256k1_fe *r, int a);

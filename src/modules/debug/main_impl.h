@@ -63,11 +63,11 @@ static unsigned char hex_char_to_buf(const unsigned char inp) {
 
 /* given hex string is stored as big endian bytes in unsinged char */
 /*
-TODO
+TODO: is there a way to set the out pointer by passing it through arguments?
 */
-static void hex_str_to_buf(unsigned char *out, int *out_len, const unsigned char *inp, int inp_len) {
-    int i = 0, j= 0, temp = (inp_len + 1)/2; /* output string length */
-    out = malloc(temp*sizeof(unsigned char));
+static unsigned char* hex_str_to_buf(int *out_len, const unsigned char *inp, int inp_len) {
+    int i = 0, j = 0, temp = (inp_len + 1)/2; /* output string length */
+    unsigned char *out = malloc(temp*sizeof(unsigned char));
 
     if (out_len != NULL) {
         *out_len = temp;
@@ -75,6 +75,7 @@ static void hex_str_to_buf(unsigned char *out, int *out_len, const unsigned char
 
     if (inp_len % 2) {
         out[i] = hex_char_to_buf(inp[i]);
+        printf("first byte %02x\n", out[i]);
         i++;
         j++;
     }
@@ -85,13 +86,16 @@ static void hex_str_to_buf(unsigned char *out, int *out_len, const unsigned char
         unsigned char high = hex_char_to_buf(inp[i]);
  
         out[j] = low | (high << 4);
-        if(high == -1 || low == -1) {
+        printf("next byte %02x\n", out[j]);
+        if (high == -1 || low == -1) {
             fprintf(stderr, "hex string should contain only 0-9,a-f and A-F");
             return 1;
         }
         i += 2;
         j++;
     }
+
+    return out;
 }
 
 static void print_ge(const secp256k1_ge *inp) {

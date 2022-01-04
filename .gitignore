@@ -11,6 +11,7 @@ valgrind_ctime_test
 *.a
 *.csv
 !.gitignore
+.vscode
 
 Makefile
 configure

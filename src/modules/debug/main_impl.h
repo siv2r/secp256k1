@@ -51,12 +51,13 @@ static void print_fe(const secp256k1_fe *inp) {
 static unsigned char hex_char_to_buf(const unsigned char inp) {
 
     if (inp >= '0' && inp <= '9') {
-        return inp - 0;
+        return inp - '0';
     } else if (inp >= 'A' && inp <= 'F') {
         return inp - 'A' + 10;
     } else if (inp >= 'a' && inp <= 'f') {
         return inp - 'a' + 10;
     }
+    fprintf(stderr, "hex string should contain only 0-9,a-f and A-F");
 
     return -1;
 }
@@ -68,29 +69,24 @@ TODO: is there a way to set the out pointer by passing it through arguments?
 static unsigned char* hex_str_to_buf(int *out_len, const unsigned char *inp, int inp_len) {
     int i = 0, j = 0, temp = (inp_len + 1)/2; /* output string length */
     unsigned char *out = malloc(temp*sizeof(unsigned char));
+    unsigned char low, high;
 
     if (out_len != NULL) {
         *out_len = temp;
     }
 
     if (inp_len % 2) {
-        out[i] = hex_char_to_buf(inp[i]);
-        printf("first byte %02x\n", out[i]);
+        out[j] = hex_char_to_buf(inp[i]);
         i++;
         j++;
     }
 
     /* the remaining hex string length will be even */
     while (i < inp_len && j < temp) {
-        unsigned char low = hex_char_to_buf(inp[i]);
-        unsigned char high = hex_char_to_buf(inp[i]);
+        low = hex_char_to_buf(inp[i+1]);
+        high = hex_char_to_buf(inp[i]);
  
         out[j] = low | (high << 4);
-        printf("next byte %02x\n", out[j]);
-        if (high == -1 || low == -1) {
-            fprintf(stderr, "hex string should contain only 0-9,a-f and A-F");
-            return 1;
-        }
         i += 2;
         j++;
     }

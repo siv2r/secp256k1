@@ -19,6 +19,7 @@
 #include "../include/secp256k1_preallocated.h"
 #include "testrand_impl.h"
 #include "util.h"
+#include "bench.h"
 
 #include "../contrib/lax_der_parsing.c"
 #include "../contrib/lax_der_privatekey_parsing.c"
@@ -6784,6 +6785,10 @@ void run_cmov_tests(void) {
 }
 
 int main(int argc, char **argv) {
+    /* setup and start the timer */
+    uint64_t begin, end;
+    begin = gettime_i64();
+    
     /* Disable buffering for stdout to improve reliability of getting
      * diagnostic information. Happens right at the start of main because
      * setbuf must be used before any other operation on the stream. */
@@ -6909,5 +6914,9 @@ int main(int argc, char **argv) {
     secp256k1_context_destroy(ctx);
 
     printf("no problems found\n");
+
+    /* end timer */
+    end = gettime_i64() - begin;
+    printf("Execution Time (us): %ld\n", end);
     return 0;
 }

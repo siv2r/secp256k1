@@ -175,6 +175,21 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_schnorrsig_verify(
     const secp256k1_xonly_pubkey *pubkey
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(5);
 
+/** Verify the set of schnorr signatures or tweaked pubkeys present in the secp256k1_batch_context.
+ * 
+ *  Returns: 1: correct schnorrsigs/tweaks
+ *           0: incorrect schnorrsigs/tweaks
+ * 
+ *  In particular, returns 0 if the batch context is empty or NULL.
+ * 
+ *  Args:    ctx: a secp256k1 context object (can be initialized for none).
+ *     batch_ctx: a secp256k1 batch context object that contains a 
+ *                set of schnorrsigs/tweaks.
+ */
+SECP256K1_API int secp256k1_batch_context_verify(
+    const secp256k1_context *ctx,
+    secp256k1_batch_context *batch_ctx
+) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
 
 #ifdef __cplusplus
 }

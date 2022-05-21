@@ -10,6 +10,7 @@
 #include "../../../include/secp256k1.h"
 #include "../../../include/secp256k1_schnorrsig.h"
 #include "../../hash.h"
+#include "batch_add_impl.h"
 
 
 
@@ -264,6 +265,11 @@ int secp256k1_schnorrsig_verify(const secp256k1_context* ctx, const unsigned cha
     secp256k1_fe_normalize_var(&r.y);
     return !secp256k1_fe_is_odd(&r.y) &&
            secp256k1_fe_equal_var(&rx, &r.x);
+}
+
+int secp256k1_batch_context_verify(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx) {
+    VERIFY_CHECK(ctx != NULL);
+    return secp256k1_batch_verify(&ctx->error_callback, batch_ctx);
 }
 
 #endif

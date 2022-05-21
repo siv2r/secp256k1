@@ -50,6 +50,7 @@ noinst_HEADERS += src/assumptions.h
 noinst_HEADERS += src/util.h
 noinst_HEADERS += src/scratch.h
 noinst_HEADERS += src/scratch_impl.h
+noinst_HEADERS += src/batch_impl.h
 noinst_HEADERS += src/selftest.h
 noinst_HEADERS += src/testrand.h
 noinst_HEADERS += src/testrand_impl.h
@@ -150,6 +151,15 @@ if BUILD_WINDOWS
 ecdsa_example_LDFLAGS += -lbcrypt
 endif
 TESTS += ecdsa_example
+noinst_PROGRAMS += batch_example
+batch_example_SOURCES = examples/batch.c
+batch_example_CPPFLAGS = -I$(top_srcdir)/include
+batch_example_LDADD = libsecp256k1.la
+batch_example_LDFLAGS = -static
+if BUILD_WINDOWS
+ecdsa_example_LDFLAGS += -lbcrypt
+endif
+TESTS += batch_example
 if ENABLE_MODULE_ECDH
 noinst_PROGRAMS += ecdh_example
 ecdh_example_SOURCES = examples/ecdh.c

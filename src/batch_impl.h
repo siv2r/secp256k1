@@ -15,6 +15,9 @@
  *       sc_g: scalar corresponding to the generator point in Multi-Scalar
  *             Multiplication equation.
  *        len: number of inputs (schnorrsigs/tweaks) that user entered.
+ *     rounds: number of times batch context's scratch space was cleared by batch_add_*,
+ *             which happens when the user adds more inputs than the capacity.
+ *             than the capacity. 
  *   capacity: max number of inputs (schnorrsigs/tweaks) that the batch object
  *             can hold
  *     result: tells whether the given set of inputs (schnorrsigs/tweaks) is valid
@@ -29,6 +32,7 @@ struct secp256k1_batch_context_struct{
     secp256k1_gej *points;
     secp256k1_scalar sc_g;
     size_t len;
+    size_t rounds;
     size_t capacity;
     int result;
 };
@@ -69,6 +73,7 @@ secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_
         /* set remaining data members */
         secp256k1_scalar_clear(&batch_ctx->sc_g);
         batch_ctx->len = 0;
+        batch_ctx->rounds = 0;
         batch_ctx->capacity = n_terms;
         batch_ctx->result = 0;
     }

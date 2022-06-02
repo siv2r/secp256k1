@@ -201,6 +201,11 @@ void secp256k1_batch_context_destroy(const secp256k1_context *ctx, secp256k1_bat
     secp256k1_batch_destroy(&ctx->error_callback, batch_ctx);
 }
 
+int secp256k1_batch_context_verify(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx) {
+    VERIFY_CHECK(ctx != NULL);
+    return secp256k1_batch_verify(&ctx->error_callback, batch_ctx);
+}
+
 /* Mark memory as no-longer-secret for the purpose of analysing constant-time behaviour
  *  of the software. This is setup for use with valgrind but could be substituted with
  *  the appropriate instrumentation for other analysis tools.
@@ -787,4 +792,5 @@ int secp256k1_tagged_sha256(const secp256k1_context* ctx, unsigned char *hash32,
 
 #ifdef ENABLE_MODULE_SCHNORRSIG
 # include "modules/schnorrsig/main_impl.h"
+# include "modules/schnorrsig/batch_add_impl.h"
 #endif

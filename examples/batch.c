@@ -54,7 +54,10 @@ int main(void) {
     size_t i;
     /* batch_context uses secp256k1_context only for the error callback function*/
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_batch_context *batch_ctx = secp256k1_batch_context_create(ctx, N_SIGS);
+    secp256k1_batch_context *batch_ctx = secp256k1_batch_context_create(ctx, N_SIGS-5);
+
+    assert(ctx != NULL);
+    assert(batch_ctx != NULL);
 
     /* key pair generation */
     printf("Creating a key pair.......................");

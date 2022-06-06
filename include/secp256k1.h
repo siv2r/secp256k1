@@ -394,7 +394,7 @@ SECP256K1_API void secp256k1_batch_context_destroy(
  *  Returns: 1: correct schnorrsigs/tweaks
  *           0: incorrect schnorrsigs/tweaks
  * 
- *  In particular, returns 0 if the batch context is empty or NULL.
+ *  In particular, returns 1 if the batch context is empty (i.e, batch_ctx->len = 0).
  * 
  *  Args:    ctx: a secp256k1 context object (can be initialized for none).
  *     batch_ctx: a secp256k1 batch context object that contains a 

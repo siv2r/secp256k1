@@ -14,7 +14,7 @@
  *     points: pointer to points allocated on the scratch space.
  *       sc_g: scalar corresponding to the generator point in Multi-Scalar
  *             Multiplication equation.
- *        len: number of inputs (schnorrsigs/tweaks) that user entered.
+ *        len: number of points (or scalars) presen on batch context's scratch space.
  *     rounds: number of times batch context's scratch space was cleared by batch_add_*,
  *             which happens when the user adds more inputs than the capacity.
  *             than the capacity. 
@@ -107,7 +107,7 @@ int secp256k1_batch_verify(const secp256k1_callback* error_callback, secp256k1_b
     
     if (batch_ctx->len > 0) {
         if(batch_ctx->scalars != NULL && batch_ctx->points != NULL) {
-            mid_res = secp256k1_ecmult_strauss_batch(error_callback, batch_ctx->data, &resj, batch_ctx->scalars, batch_ctx->points, &batch_ctx->sc_g, NULL, NULL, 2*batch_ctx->len, 0) && secp256k1_gej_is_infinity(&resj);
+            mid_res = secp256k1_ecmult_strauss_batch(error_callback, batch_ctx->data, &resj, batch_ctx->scalars, batch_ctx->points, &batch_ctx->sc_g, NULL, NULL, batch_ctx->len, 0) && secp256k1_gej_is_infinity(&resj);
             if (batch_ctx->rounds > 0){
                 batch_ctx->result = batch_ctx->result && mid_res;
             } else {

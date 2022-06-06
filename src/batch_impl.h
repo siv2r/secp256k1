@@ -73,7 +73,6 @@ int secp256k1_batch_scratch_alloc(const secp256k1_callback* error_callback, secp
 secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_callback, size_t n_terms) {
     size_t batch_size = sizeof(secp256k1_batch_context);
     size_t batch_scratch_size = secp256k1_batch_scratch_size(2*n_terms);
-    size_t checkpoint;
     secp256k1_batch_context* batch_ctx = (secp256k1_batch_context*)checked_malloc(&default_error_callback, batch_size);
 
     VERIFY_CHECK(batch_size != 0);
@@ -81,24 +80,19 @@ secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_
     if (batch_ctx != NULL) {
         /* create scratch space inside batch context */
         batch_ctx->data = secp256k1_scratch_create(error_callback, batch_scratch_size);
-        checkpoint = secp256k1_scratch_checkpoint(error_callback, batch_ctx->data);
-
         /* allocate 2*n_terms scalars and points on scratch space */
-        batch_ctx->scalars = (secp256k1_scalar*)secp256k1_scratch_alloc(error_callback, batch_ctx->data, 2*n_terms*sizeof(secp256k1_scalar));
-        batch_ctx->points = (secp256k1_gej*)secp256k1_scratch_alloc(error_callback, batch_ctx->data, 2*n_terms*sizeof(secp256k1_gej));
+        batch_ctx->capacity = 2*n_terms;
+        if (!secp256k1_batch_scratch_alloc(error_callback, batch_ctx)) {
         /* if scalar or point allocation fails, free all the previous the allocated memory
            and return NULL */
-        if (batch_ctx->scalars == NULL || batch_ctx->points == NULL) {
-            secp256k1_scratch_apply_checkpoint(error_callback, batch_ctx->data, checkpoint);
             secp256k1_scratch_destroy(error_callback, batch_ctx->data);
             free(batch_ctx);
-            return NULL;
+            return NULL;            
         }
         
         /* set remaining data members */
         secp256k1_scalar_clear(&batch_ctx->sc_g);
         batch_ctx->len = 0;
-        batch_ctx->capacity = 2*n_terms;
         batch_ctx->result = 1;
     }
 

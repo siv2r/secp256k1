@@ -50,6 +50,7 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     if (!secp256k1_ge_is_in_correct_subgroup(&r)) {
         return 0;
     }
+    /* secp256k1_fe_normalize(&r.y); */
     secp256k1_gej_set_ge(&batch_ctx->points[i], &r);
 
     /* append point P to the scratch space */
@@ -58,21 +59,22 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     /* Compute e. */
     secp256k1_fe_get_b32(buf, &pk.x);
     secp256k1_schnorrsig_challenge(&e, &sig64[0], msg, msglen, buf);
-
+    
     /* Compute ai */
     secp256k1_scalar_set_int(&ai, 1);
 
-    /* append scalars ai, ai.e (order imp) to scratch space */
-    secp256k1_scalar_cmov(&batch_ctx->scalars[i], &ai, 1);
+    /* append scalars ai, ai.e respectively to scratch space */
+    batch_ctx->scalars[i] = ai;
     secp256k1_scalar_mul(&e, &e, &ai);
-    secp256k1_scalar_cmov(&batch_ctx->scalars[i+1], &e, 1); /* use memcpy instead? */
+    batch_ctx->scalars[i+1] = e;
 
     /* increment scalar of G by -ai.s */
     secp256k1_scalar_mul(&s, &s, &ai);
     secp256k1_scalar_negate(&s, &s);
     secp256k1_scalar_add(&batch_ctx->sc_g, &batch_ctx->sc_g, &s);
-
+    
     batch_ctx->len += 1;
+    
     return 1;
 }
 

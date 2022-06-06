@@ -23,7 +23,7 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     secp256k1_ge r;
     unsigned char buf[32];
     int overflow;
-    size_t i = 2*batch_ctx->len; /* todo: any MAX/2 check required? (like in prev impl) */
+    size_t i = batch_ctx->len; /* todo: any MAX/2 check required? (like in prev impl) */
 
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(sig64 != NULL);
@@ -73,7 +73,7 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     secp256k1_scalar_negate(&s, &s);
     secp256k1_scalar_add(&batch_ctx->sc_g, &batch_ctx->sc_g, &s);
     
-    batch_ctx->len += 1;
+    batch_ctx->len += 2;
     
     return 1;
 }

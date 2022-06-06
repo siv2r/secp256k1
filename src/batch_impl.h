@@ -14,9 +14,8 @@
  *     points: pointer to points allocated on the scratch space.
  *       sc_g: scalar corresponding to the generator point in Multi-Scalar
  *             Multiplication equation.
- *        len: number of points (or scalars) presen on batch context's scratch space.
- *   capacity: max number of inputs (schnorrsigs/tweaks) that the batch object
- *             can hold
+ *        len: number of points (or scalars) present on batch context's scratch space.
+ *   capacity: max number of points (or scalars) that the batch object can hold.
  *     result: tells whether the given set of inputs (schnorrsigs/tweaks) is valid
  *             or invalid. 1 = valid and 0 = invalid. By default, this is set to 1
  *             during batch context creation (i.e, `secp256k1_batch_create`).
@@ -40,6 +39,35 @@ size_t secp256k1_batch_scratch_size(int n_terms) {
     VERIFY_CHECK(ret != 0);
 
     return ret;
+}
+
+/** Clears the scalar and points allocated on the batch context's scratch space */
+void secp256k1_batch_scratch_clear(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
+    secp256k1_scratch_apply_checkpoint(error_callback, batch_ctx->data, 0);
+    batch_ctx->scalars = NULL;
+    batch_ctx->points = NULL;
+    secp256k1_scalar_clear(&batch_ctx->sc_g);
+    batch_ctx->len = 0;
+}
+
+/** Allocates space for `batch_ctx->capacity` amount of scalars and points on batch 
+ *  context's scratch space */
+int secp256k1_batch_scratch_alloc(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
+    size_t checkpoint = secp256k1_scratch_checkpoint(error_callback, batch_ctx->data);
+    size_t count = batch_ctx->capacity;
+
+    VERIFY_CHECK(count > 0);
+
+    batch_ctx->scalars = (secp256k1_scalar*)secp256k1_scratch_alloc(error_callback, batch_ctx->data, count*sizeof(secp256k1_scalar));
+    batch_ctx->points = (secp256k1_gej*)secp256k1_scratch_alloc(error_callback, batch_ctx->data, count*sizeof(secp256k1_gej));
+    
+    /* If scalar or point allocation fails, restore scratch space to previous state */
+    if (batch_ctx->scalars == NULL || batch_ctx->points == NULL) {
+        secp256k1_scratch_apply_checkpoint(error_callback, batch_ctx->data, checkpoint);
+        return 0;
+    }
+
+    return 1;
 }
 
 secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_callback, size_t n_terms) {
@@ -70,7 +98,7 @@ secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_
         /* set remaining data members */
         secp256k1_scalar_clear(&batch_ctx->sc_g);
         batch_ctx->len = 0;
-        batch_ctx->capacity = n_terms;
+        batch_ctx->capacity = 2*n_terms;
         batch_ctx->result = 1;
     }
 

@@ -14,6 +14,7 @@
  *  s = sig64[32:64]
  */
 /*todo: run transparent verification, if batch is full */
+/* todo: any MAX/2 check required? (like in prev impl) */
 int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch_context *batch_ctx, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
     secp256k1_scalar s;
     secp256k1_scalar e;
@@ -23,7 +24,7 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     secp256k1_ge r;
     unsigned char buf[32];
     int overflow;
-    size_t i = batch_ctx->len; /* todo: any MAX/2 check required? (like in prev impl) */
+    size_t i;
 
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(sig64 != NULL);
@@ -43,6 +44,22 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
         return 0;
     }
 
+    /* run verify if batch context's scratch is full */
+    if (batch_ctx->capacity - batch_ctx->len < 2) {
+        printf("\nbatch_add: Batch context is full...\n");
+        printf("batch_add: Verifying the batch context...\n");
+        if (!secp256k1_batch_verify(&ctx->error_callback, batch_ctx)) {
+            /* tell user there is no point in adding sigs/tweaks?? */
+            /* it will fail anyway */
+        }
+        printf("batch_add: Clearing the batch context for future use...\n");
+        secp256k1_batch_scratch_clear(&ctx->error_callback, batch_ctx);
+        if (!secp256k1_batch_scratch_alloc(&ctx->error_callback, batch_ctx)) {
+            return 0;
+        }
+    }
+
+    i = batch_ctx->len;
     /* append point R to the scratch space */
     if (!secp256k1_ge_set_xo_var(&r, &rx, 0)) {/* todo: is rx > prime order, checked here? */
         return 0;

@@ -104,11 +104,10 @@ void secp256k1_batch_destroy(const secp256k1_callback* error_callback, secp256k1
 int secp256k1_batch_verify(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
     secp256k1_gej resj;
     int mid_res;
-
+    
     if (batch_ctx->len > 0) {
         if(batch_ctx->scalars != NULL && batch_ctx->points != NULL) {
-            mid_res = secp256k1_ecmult_strauss_batch(error_callback, batch_ctx->data, &resj,  batch_ctx->scalars, batch_ctx->points, &batch_ctx->sc_g, NULL, NULL, batch_ctx->len, 0) && secp256k1_gej_is_infinity(&resj);
-
+            mid_res = secp256k1_ecmult_strauss_batch(error_callback, batch_ctx->data, &resj, batch_ctx->scalars, batch_ctx->points, &batch_ctx->sc_g, NULL, NULL, 2*batch_ctx->len, 0) && secp256k1_gej_is_infinity(&resj);
             if (batch_ctx->rounds > 0){
                 batch_ctx->result = batch_ctx->result && mid_res;
             } else {

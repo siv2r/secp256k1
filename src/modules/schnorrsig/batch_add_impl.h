@@ -4,12 +4,12 @@
 #include "../../batch_impl.h"
 
 /** Adds the given schnorrsig data to the batch context.
- * 
+ *
  *  appends (ai, R), (ai.e, P) to the batch context's scratch space
- *  R = nonce commitment - secp256k1_gej 
+ *  R = nonce commitment - secp256k1_gej
  *  X = pubkey - secp256k1_gej
  *  ai = randomizer - secp256k1_scalar
- * 
+ *
  *  increments the scalar of G (in the batch context) by -ai.s
  *  s = sig64[32:64]
  */
@@ -76,7 +76,7 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     /* Compute e. */
     secp256k1_fe_get_b32(buf, &pk.x);
     secp256k1_schnorrsig_challenge(&e, &sig64[0], msg, msglen, buf);
-    
+
     /* Compute ai */
     secp256k1_scalar_set_int(&ai, 1);
 
@@ -89,9 +89,9 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     secp256k1_scalar_mul(&s, &s, &ai);
     secp256k1_scalar_negate(&s, &s);
     secp256k1_scalar_add(&batch_ctx->sc_g, &batch_ctx->sc_g, &s);
-    
+
     batch_ctx->len += 2;
-    
+
     return 1;
 }
 

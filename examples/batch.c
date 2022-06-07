@@ -40,7 +40,7 @@ int generate_schnorrsigs(secp256k1_context *ctx) {
     for (i = 0; i < N_SIGS; i++) {
         if(!fill_random(msg[i], sizeof(msg[i]))) {
             printf("Failed to generate randomness\n");
-            return 1;            
+            return 1;
         }
         assert(secp256k1_schnorrsig_sign32(ctx, sig[i], msg[i], &keypair, NULL));
         assert(secp256k1_schnorrsig_verify(ctx, sig[i], msg[i], sizeof(msg[i]), &pk));

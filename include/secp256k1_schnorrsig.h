@@ -179,7 +179,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_schnorrsig_verify(
  *
  *  Returns 1 on success, 0 on failure.
  *  Args:    ctx: a secp256k1 context object (can be initialized for none).
- *     batch_ctx: a secp256k1 batch context object created using 
+ *     batch_ctx: a secp256k1 batch context object created using
  *                the secp256k1_batch_context_create API
  *  In:    sig64: pointer to the 64-byte signature to verify.
  *           msg: the message being verified. Can only be NULL if msglen is 0.

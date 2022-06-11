@@ -14,6 +14,9 @@
  *     points: pointer to points allocated on the scratch space.
  *       sc_g: scalar corresponding to the generator point in Multi-Scalar
  *             Multiplication equation.
+ *     sha256: contains hash of all the inputs (schnorrsig/tweaks) present in
+ *             the batch context. Used for generating a random secp256k1_scalar
+ *             for each term added by secp256k1_batch_context_add_*.
  *        len: number of points (or scalars) present on batch context's scratch space.
  *   capacity: max number of points (or scalars) that the batch object can hold.
  *     result: tells whether the given set of inputs (schnorrsigs/tweaks) is valid
@@ -28,6 +31,7 @@ struct secp256k1_batch_context_struct{
     secp256k1_scalar *scalars;
     secp256k1_gej *points;
     secp256k1_scalar sc_g;
+    secp256k1_sha256 sha256;
     size_t len;
     size_t capacity;
     int result;
@@ -92,6 +96,7 @@ secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_
 
         /* set remaining data members */
         secp256k1_scalar_clear(&batch_ctx->sc_g);
+        secp256k1_sha256_initialize(&batch_ctx->sha256);
         batch_ctx->len = 0;
         batch_ctx->result = 1;
     }

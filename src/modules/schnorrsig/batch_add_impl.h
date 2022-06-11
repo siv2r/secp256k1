@@ -1,7 +1,71 @@
 #ifndef SECP256K1_BATCH_ADD_IMPL_H
 #define SECP256K1_BATCH_ADD_IMPL_H
 
+#include "../../../include/secp256k1_schnorrsig.h"
+#include "../../hash.h"
 #include "../../batch_impl.h"
+
+int secp256k1_batch_schnorrsig_init_randomizer(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
+    secp256k1_sha256 sha256_cpy;
+    unsigned char res[32];
+    unsigned char buf[33];
+    size_t buflen = sizeof(buf);
+    int overflow;
+
+    /* add schnorrsig data to sha256 object */
+    secp256k1_sha256_write(&batch_ctx->sha256, sig64, 64);
+    secp256k1_sha256_write(&batch_ctx->sha256, msg, msglen);
+    /* We use compressed serialization here. If we would use
+    * xonly_pubkey serialization and a user would wrongly memcpy
+    * normal secp256k1_pubkeys into xonly_pubkeys then the randomizer
+    * would be the same for two different pubkeys. */
+    if (!secp256k1_ec_pubkey_serialize(ctx, buf, &buflen, (const secp256k1_pubkey *) pubkey, SECP256K1_EC_COMPRESSED)) {
+        return 0;
+    }
+    secp256k1_sha256_write(&batch_ctx->sha256, buf, buflen);
+
+    /* generate randomizer */
+    sha256_cpy = batch_ctx->sha256;
+    secp256k1_sha256_finalize(&sha256_cpy, res);
+    secp256k1_scalar_set_b32(r, res, &overflow);
+    VERIFY_CHECK(overflow == 0); /*todo: is this check necessary? */
+
+    return 1;
+}
+
+
+int secp256k1_batch_xonlypub_tweak_init_randomizer(const secp256k1_context* ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
+    secp256k1_sha256 sha256_cpy;
+    unsigned char res[32];
+    unsigned char tweaked_buf[33];
+    unsigned char internal_buf[33];
+    size_t internal_buflen = sizeof(internal_buf);
+    int overflow;
+
+    /* We use compressed serialization here. If we would use
+    * xonly_pubkey serialization and a user would wrongly memcpy
+    * normal secp256k1_pubkeys into xonly_pubkeys then the randomizer
+    * would be the same for two different pubkeys. */
+    if (!secp256k1_ec_pubkey_serialize(ctx, internal_buf, &internal_buflen, (const secp256k1_pubkey *) internal_pubkey, SECP256K1_EC_COMPRESSED)) {
+        return 0;
+    }
+    tweaked_buf[0] = (tweaked_pk_parity == 0) ? 0x02 : 0x03;
+    memcpy(tweaked_buf+1, tweaked_pubkey32, 32);
+
+    /* add tweaked pubkey check data to sha object */
+    secp256k1_sha256_write(&batch_ctx->sha256, tweaked_buf, sizeof(tweaked_buf));
+    secp256k1_sha256_write(&batch_ctx->sha256, tweak32, 32);
+    secp256k1_sha256_write(&batch_ctx->sha256, internal_buf, internal_buflen);
+
+    /* generate randomizer */
+    sha256_cpy = batch_ctx->sha256;
+    secp256k1_sha256_finalize(&sha256_cpy, res);
+    secp256k1_scalar_set_b32(r, res, &overflow);
+    VERIFY_CHECK(overflow == 0); /*todo: is this check necessary? */
+
+    return 1;
+}
+
 
 /** Adds the given schnorrsig data to the batch context.
  *  This function's algorithm is based on secp256k1_schnorrsig_verify.
@@ -74,12 +138,14 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     /* append point P to the scratch space */
     secp256k1_gej_set_ge(&batch_ctx->points[i+1], &pk);
 
-    /* Compute e. */
+    /* Compute e */
     secp256k1_fe_get_b32(buf, &pk.x);
     secp256k1_schnorrsig_challenge(&e, &sig64[0], msg, msglen, buf);
 
     /* Compute ai */
-    secp256k1_scalar_set_int(&ai, 1);
+    if (!secp256k1_batch_schnorrsig_init_randomizer(ctx, batch_ctx, &ai, sig64, msg, msglen, pubkey)) {
+        return 0;
+    }
 
     /* append scalars ai, ai.e respectively to scratch space */
     batch_ctx->scalars[i] = ai;
@@ -166,7 +232,9 @@ int secp256k1_batch_context_add_xonlypub_tweak(const secp256k1_context* ctx, sec
     secp256k1_gej_set_ge(&batch_ctx->points[i+1], &pk);
 
     /* Compute ai */
-    secp256k1_scalar_set_int(&ai, 1);
+    if(!secp256k1_batch_xonlypub_tweak_init_randomizer(ctx, batch_ctx, &ai, tweaked_pubkey32, tweaked_pk_parity, internal_pubkey, tweak32)) {
+        return 0;
+    }
 
     /* append scalars -ai, ai respectively to scratch space */
     secp256k1_scalar_negate(&tmp, &ai);

@@ -115,7 +115,7 @@ int main(void) {
     }
     printf("ok\n");
 
-    printf("Generating xonlypub tweak checks messages...");
+    printf("Generating xonlypub tweak checks............");
     if(!generate_xonlypub_tweak_checks(ctx)) {
         printf("FAILED\n");
         return 1;

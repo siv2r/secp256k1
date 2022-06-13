@@ -74,6 +74,22 @@ int secp256k1_batch_scratch_alloc(const secp256k1_callback* error_callback, secp
     return 1;
 }
 
+/* Initializes SHA256 with fixed midstate. This midstate was computed by applying
+ * SHA256 to SHA256("BIP0340/batch")||SHA256("BIP0340/batch"). */
+void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
+    secp256k1_sha256_initialize(sha);
+    sha->s[0] = 0x79e3e0d2ul;
+    sha->s[1] = 0x12284f32ul;
+    sha->s[2] = 0xd7d89e1cul;
+    sha->s[3] = 0x6491ea9aul;
+    sha->s[4] = 0xad823b2ful;
+    sha->s[5] = 0xfacfe0b6ul;
+    sha->s[6] = 0x342b78baul;
+    sha->s[7] = 0x12ece87cul;
+
+    sha->bytes = 64;
+}
+
 secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_callback, size_t n_terms) {
     size_t batch_size = sizeof(secp256k1_batch_context);
     size_t batch_scratch_size = secp256k1_batch_scratch_size(2*n_terms);
@@ -96,7 +112,7 @@ secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_
 
         /* set remaining data members */
         secp256k1_scalar_clear(&batch_ctx->sc_g);
-        secp256k1_sha256_initialize(&batch_ctx->sha256);
+        secp256k1_batch_sha256_tagged(&batch_ctx->sha256);
         batch_ctx->len = 0;
         batch_ctx->result = 1;
     }

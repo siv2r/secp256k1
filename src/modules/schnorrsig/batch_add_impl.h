@@ -5,16 +5,13 @@
 #include "../../hash.h"
 #include "../../batch_impl.h"
 
-int secp256k1_batch_schnorrsig_init_randomizer(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
+int secp256k1_batch_schnorrsig_randomizer(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
     secp256k1_sha256 sha256_cpy;
-    unsigned char res[32];
+    unsigned char randomizer[32];
     unsigned char buf[33];
     size_t buflen = sizeof(buf);
     int overflow;
 
-    /* add schnorrsig data to sha256 object */
-    secp256k1_sha256_write(&batch_ctx->sha256, sig64, 64);
-    secp256k1_sha256_write(&batch_ctx->sha256, msg, msglen);
     /* We use compressed serialization here. If we would use
     * xonly_pubkey serialization and a user would wrongly memcpy
     * normal secp256k1_pubkeys into xonly_pubkeys then the randomizer
@@ -22,22 +19,26 @@ int secp256k1_batch_schnorrsig_init_randomizer(const secp256k1_context *ctx, sec
     if (!secp256k1_ec_pubkey_serialize(ctx, buf, &buflen, (const secp256k1_pubkey *) pubkey, SECP256K1_EC_COMPRESSED)) {
         return 0;
     }
+
+    /* add schnorrsig data to sha256 object */
+    secp256k1_sha256_write(&batch_ctx->sha256, sig64, 64);
+    secp256k1_sha256_write(&batch_ctx->sha256, msg, msglen);
     secp256k1_sha256_write(&batch_ctx->sha256, buf, buflen);
 
     /* generate randomizer */
     sha256_cpy = batch_ctx->sha256;
-    secp256k1_sha256_finalize(&sha256_cpy, res);
-    secp256k1_scalar_set_b32(r, res, &overflow);
-    VERIFY_CHECK(overflow == 0); /*todo: is this check necessary? */
+    secp256k1_sha256_finalize(&sha256_cpy, randomizer);
+    secp256k1_scalar_set_b32(r, randomizer, &overflow);
+    VERIFY_CHECK(overflow == 0);
 
     return 1;
 }
 
 
-int secp256k1_batch_xonlypub_tweak_init_randomizer(const secp256k1_context* ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
+int secp256k1_batch_xonlypub_tweak_randomizer(const secp256k1_context* ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
     secp256k1_sha256 sha256_cpy;
-    unsigned char res[32];
-    unsigned char tweaked_buf[33];
+    unsigned char randomizer[32];
+    unsigned char parity = (unsigned char) tweaked_pk_parity;
     unsigned char internal_buf[33];
     size_t internal_buflen = sizeof(internal_buf);
     int overflow;
@@ -49,37 +50,41 @@ int secp256k1_batch_xonlypub_tweak_init_randomizer(const secp256k1_context* ctx,
     if (!secp256k1_ec_pubkey_serialize(ctx, internal_buf, &internal_buflen, (const secp256k1_pubkey *) internal_pubkey, SECP256K1_EC_COMPRESSED)) {
         return 0;
     }
-    tweaked_buf[0] = (tweaked_pk_parity == 0) ? 0x02 : 0x03;
-    memcpy(tweaked_buf+1, tweaked_pubkey32, 32);
 
     /* add tweaked pubkey check data to sha object */
-    secp256k1_sha256_write(&batch_ctx->sha256, tweaked_buf, sizeof(tweaked_buf));
+    secp256k1_sha256_write(&batch_ctx->sha256, tweaked_pubkey32, 32);
+    secp256k1_sha256_write(&batch_ctx->sha256, &parity, sizeof(parity));
     secp256k1_sha256_write(&batch_ctx->sha256, tweak32, 32);
     secp256k1_sha256_write(&batch_ctx->sha256, internal_buf, internal_buflen);
 
     /* generate randomizer */
     sha256_cpy = batch_ctx->sha256;
-    secp256k1_sha256_finalize(&sha256_cpy, res);
-    secp256k1_scalar_set_b32(r, res, &overflow);
-    VERIFY_CHECK(overflow == 0); /*todo: is this check necessary? */
+    secp256k1_sha256_finalize(&sha256_cpy, randomizer);
+    secp256k1_scalar_set_b32(r, randomizer, &overflow);
+    VERIFY_CHECK(overflow == 0);
 
     return 1;
 }
 
 
 /** Adds the given schnorrsig data to the batch context.
- *  This function's algorithm is based on secp256k1_schnorrsig_verify.
  *
- *  appends (ai, R), (ai.e, P) to the batch context's scratch space
- *  R = nonce commitment - secp256k1_gej
- *  P = pubkey - secp256k1_gej
- *  ai = randomizer - secp256k1_scalar
+ *  Updates the batch context by:
+ *     1. adding the points R and P to the scratch space
+ *     2. adding the scalars ai and ai.e to the scratch space
+ *          -> ai   is the scalar coefficient of R (in multi multiplication)
+ *          -> ai.e is the scalar coefficient of P (in multi multiplication)
+ *     3. incrementing sc_g (scalar of G) by -ai.s
  *
- *  increments the scalar of G (in the batch context) by -ai.s, where
- *  s = sig64[32:64]
+ *  Conventions used above:
+ *     -> R (nonce commitment) = EC point whose y = even and x = sig64[0:32]
+ *     -> P (public key)       = pubkey
+ *     -> ai (randomizer)      = sha256_tagged(sig64 || msg || pubkey)
+ *     -> e (challenge)        = sha256_tagged(sig64[0:32] || pk.x || msg)
+ *     -> s                    = sig64[32:64]
+ *
+ * This function's algorithm is based on secp256k1_schnorrsig_verify.
  */
-/*todo: run transparent verification, if batch is full */
-/* todo: any MAX/2 check required? (like in prev impl) */
 int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch_context *batch_ctx, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
     secp256k1_scalar s;
     secp256k1_scalar e;
@@ -126,13 +131,12 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
 
     i = batch_ctx->len;
     /* append point R to the scratch space */
-    if (!secp256k1_ge_set_xo_var(&r, &rx, 0)) {/* todo: is rx > prime order, checked here? */
+    if (!secp256k1_ge_set_xo_var(&r, &rx, 0)) {
         return 0;
     }
     if (!secp256k1_ge_is_in_correct_subgroup(&r)) {
         return 0;
     }
-    /* secp256k1_fe_normalize(&r.y); */
     secp256k1_gej_set_ge(&batch_ctx->points[i], &r);
 
     /* append point P to the scratch space */
@@ -143,7 +147,7 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     secp256k1_schnorrsig_challenge(&e, &sig64[0], msg, msglen, buf);
 
     /* Compute ai */
-    if (!secp256k1_batch_schnorrsig_init_randomizer(ctx, batch_ctx, &ai, sig64, msg, msglen, pubkey)) {
+    if (!secp256k1_batch_schnorrsig_randomizer(ctx, batch_ctx, &ai, sig64, msg, msglen, pubkey)) {
         return 0;
     }
 
@@ -162,18 +166,26 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     return 1;
 }
 
-/** Adds the given xonly pubkey tweak check data to the batch context.
- *  This function's algorithm is based on secp256k1_xonly_pubkey_tweak_add_check.
+/** Adds the given tweaked pubkey check data to the batch context.
  *
- *  appends (-ai, Q), (ai, P) to the batch context's scratch space
- *  Q = tweaked pubkey - secp256k1_gej
- *  P = internal pubkey - secp256k1_gej
- *  ai = randomizer - secp256k1_scalar
+ *  Updates the batch context by:
+ *     1. adding the points Q and P to the scratch space
+ *          -> the points are of type secp256k1_gej
+ *     2. adding the scalars -ai and ai to the scratch space
+ *          -> -ai is the scalar coefficient of Q (in multi multiplication)
+ *          ->  ai is the scalar coefficient of P (in multi multiplication)
+ *     3. incrementing sc_g (scalar of G) by -ai.tweak
  *
- *  increments the scalar of G (in the batch context) by ai.tweak times
+ *  Conventions used above:
+ *     -> Q (tweaked pubkey)   = EC point where parity(y) = tweaked_pk_parity
+ *                               and x = tweaked_pubkey32
+ *     -> P (internal pubkey)  = internal pubkey
+ *     -> ai (randomizer)      = sha256_tagged(tweaked_pubkey32  ||
+ *                                             tweaked_pk_parity || tweak32 || pubkey)
+ *     -> tweak (challenge)    = tweak32
+ *
+ * This function's algorithm is based on secp256k1_xonly_pubkey_tweak_add_check.
  */
-/*todo: run transparent verification, if batch is full */
-/* todo: any MAX/2 check required? (like in prev impl) */
 int secp256k1_batch_context_add_xonlypub_tweak(const secp256k1_context* ctx, secp256k1_batch_context *batch_ctx, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
     secp256k1_scalar tweak;
     secp256k1_scalar ai;
@@ -232,7 +244,7 @@ int secp256k1_batch_context_add_xonlypub_tweak(const secp256k1_context* ctx, sec
     secp256k1_gej_set_ge(&batch_ctx->points[i+1], &pk);
 
     /* Compute ai */
-    if(!secp256k1_batch_xonlypub_tweak_init_randomizer(ctx, batch_ctx, &ai, tweaked_pubkey32, tweaked_pk_parity, internal_pubkey, tweak32)) {
+    if(!secp256k1_batch_xonlypub_tweak_randomizer(ctx, batch_ctx, &ai, tweaked_pubkey32, tweaked_pk_parity, internal_pubkey, tweak32)) {
         return 0;
     }
 

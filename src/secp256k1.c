@@ -179,10 +179,10 @@ void secp256k1_scratch_space_destroy(const secp256k1_context *ctx, secp256k1_scr
     secp256k1_scratch_destroy(&ctx->error_callback, scratch);
 }
 
-secp256k1_batch_context* secp256k1_batch_context_create(const secp256k1_context* ctx, size_t n_terms) {
+secp256k1_batch_context* secp256k1_batch_context_create(const secp256k1_context* ctx, size_t max_terms) {
     VERIFY_CHECK(ctx != NULL);
-    ARG_CHECK(n_terms > 0);
-    return secp256k1_batch_create(&ctx->error_callback, n_terms);
+    ARG_CHECK(max_terms > 0);
+    return secp256k1_batch_create(&ctx->error_callback, max_terms);
 }
 
 void secp256k1_batch_context_destroy(const secp256k1_context *ctx, secp256k1_batch_context* batch_ctx) {
@@ -192,6 +192,7 @@ void secp256k1_batch_context_destroy(const secp256k1_context *ctx, secp256k1_bat
 
 int secp256k1_batch_context_verify(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx) {
     VERIFY_CHECK(ctx != NULL);
+    ARG_CHECK(batch_ctx != NULL);
     return secp256k1_batch_verify(&ctx->error_callback, batch_ctx);
 }
 

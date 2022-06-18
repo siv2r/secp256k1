@@ -5,7 +5,7 @@
 #include "../../hash.h"
 #include "../../batch_impl.h"
 
-int secp256k1_batch_schnorrsig_randomizer(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
+static int secp256k1_batch_schnorrsig_randomizer(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
     secp256k1_sha256 sha256_cpy;
     unsigned char randomizer[32];
     unsigned char buf[33];
@@ -35,7 +35,7 @@ int secp256k1_batch_schnorrsig_randomizer(const secp256k1_context *ctx, secp256k
 }
 
 
-int secp256k1_batch_xonlypub_tweak_randomizer(const secp256k1_context* ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
+static int secp256k1_batch_xonlypub_tweak_randomizer(const secp256k1_context* ctx, secp256k1_batch_context *batch_ctx, secp256k1_scalar *r, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
     secp256k1_sha256 sha256_cpy;
     unsigned char randomizer[32];
     unsigned char parity = (unsigned char) tweaked_pk_parity;
@@ -97,6 +97,7 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
     size_t i;
 
     VERIFY_CHECK(ctx != NULL);
+    ARG_CHECK(batch_ctx != NULL);
     ARG_CHECK(sig64 != NULL);
     ARG_CHECK(msg != NULL || msglen == 0);
     ARG_CHECK(pubkey != NULL);
@@ -197,6 +198,7 @@ int secp256k1_batch_context_add_xonlypub_tweak(const secp256k1_context* ctx, sec
     size_t i;
 
     VERIFY_CHECK(ctx != NULL);
+    ARG_CHECK(batch_ctx != NULL);
     ARG_CHECK(internal_pubkey != NULL);
     ARG_CHECK(tweaked_pubkey32 != NULL);
     ARG_CHECK(tweak32 != NULL);
@@ -244,7 +246,7 @@ int secp256k1_batch_context_add_xonlypub_tweak(const secp256k1_context* ctx, sec
     secp256k1_gej_set_ge(&batch_ctx->points[i+1], &pk);
 
     /* Compute ai */
-    if(!secp256k1_batch_xonlypub_tweak_randomizer(ctx, batch_ctx, &ai, tweaked_pubkey32, tweaked_pk_parity, internal_pubkey, tweak32)) {
+    if (!secp256k1_batch_xonlypub_tweak_randomizer(ctx, batch_ctx, &ai, tweaked_pubkey32, tweaked_pk_parity, internal_pubkey, tweak32)) {
         return 0;
     }
 

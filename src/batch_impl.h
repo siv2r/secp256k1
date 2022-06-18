@@ -37,8 +37,8 @@ struct secp256k1_batch_context_struct{
     int result;
 };
 
-size_t secp256k1_batch_scratch_size(int n_terms) {
-    size_t ret = secp256k1_strauss_scratch_size(n_terms) + STRAUSS_SCRATCH_OBJECTS*16;
+static size_t secp256k1_batch_scratch_size(int max_terms) {
+    size_t ret = secp256k1_strauss_scratch_size(max_terms) + STRAUSS_SCRATCH_OBJECTS*16;
     /* Return value of 0 is reserved for error */
     VERIFY_CHECK(ret != 0);
 
@@ -46,7 +46,7 @@ size_t secp256k1_batch_scratch_size(int n_terms) {
 }
 
 /** Clears the scalar and points allocated on the batch context's scratch space */
-void secp256k1_batch_scratch_clear(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
+static void secp256k1_batch_scratch_clear(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
     secp256k1_scratch_apply_checkpoint(error_callback, batch_ctx->data, 0);
     batch_ctx->scalars = NULL;
     batch_ctx->points = NULL;
@@ -56,7 +56,7 @@ void secp256k1_batch_scratch_clear(const secp256k1_callback* error_callback, sec
 
 /** Allocates space for `batch_ctx->capacity` amount of scalars and points on batch
  *  context's scratch space */
-int secp256k1_batch_scratch_alloc(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
+static int secp256k1_batch_scratch_alloc(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
     size_t checkpoint = secp256k1_scratch_checkpoint(error_callback, batch_ctx->data);
     size_t count = batch_ctx->capacity;
 
@@ -76,7 +76,7 @@ int secp256k1_batch_scratch_alloc(const secp256k1_callback* error_callback, secp
 
 /* Initializes SHA256 with fixed midstate. This midstate was computed by applying
  * SHA256 to SHA256("BIP0340/batch")||SHA256("BIP0340/batch"). */
-void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
+static void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
     secp256k1_sha256_initialize(sha);
     sha->s[0] = 0x79e3e0d2ul;
     sha->s[1] = 0x12284f32ul;
@@ -90,18 +90,16 @@ void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
     sha->bytes = 64;
 }
 
-secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_callback, size_t n_terms) {
+static secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_callback, size_t max_terms) {
     size_t batch_size = sizeof(secp256k1_batch_context);
-    size_t batch_scratch_size = secp256k1_batch_scratch_size(2*n_terms);
+    size_t batch_scratch_size = secp256k1_batch_scratch_size(2*max_terms);
     secp256k1_batch_context* batch_ctx = (secp256k1_batch_context*)checked_malloc(&default_error_callback, batch_size);
-
-    VERIFY_CHECK(batch_size != 0);
 
     if (batch_ctx != NULL) {
         /* create scratch space inside batch context */
         batch_ctx->data = secp256k1_scratch_create(error_callback, batch_scratch_size);
-        /* allocate 2*n_terms scalars and points on scratch space */
-        batch_ctx->capacity = 2*n_terms;
+        /* allocate 2*max_terms scalars and points on scratch space */
+        batch_ctx->capacity = 2*max_terms;
         if (!secp256k1_batch_scratch_alloc(error_callback, batch_ctx)) {
         /* if scalar or point allocation fails, free all the previous the allocated memory
            and return NULL */
@@ -120,7 +118,7 @@ secp256k1_batch_context* secp256k1_batch_create(const secp256k1_callback* error_
     return batch_ctx;
 }
 
-void secp256k1_batch_destroy(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
+static void secp256k1_batch_destroy(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
     if (batch_ctx != NULL) {
         if(batch_ctx->data != NULL) {
             secp256k1_scratch_apply_checkpoint(error_callback, batch_ctx->data, 0);
@@ -140,7 +138,7 @@ void secp256k1_batch_destroy(const secp256k1_callback* error_callback, secp256k1
  * 0 != -(s1 + a2*s2 + ... + au*su)G
  *      + R1 + a2*R2 + ... + au*Ru + e1*P1 + (a2*e2)P2 + ... + (au*eu)Pu.
  */
-int secp256k1_batch_verify(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
+static int secp256k1_batch_verify(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
     secp256k1_gej resj;
     int mid_res;
 

@@ -372,12 +372,12 @@ SECP256K1_API void secp256k1_scratch_space_destroy(
  *  Returns: a newly created batch context object.
  *  Args:        ctx:  an existing secp256k1_context object. Not to be confused
  *                     with the batch context object that this function creates.
- *  In:      n_terms:  max number of (scalar, curve point) pairs that the batch
+ *  In:      max_terms:  max number of (scalar, curve point) pairs that the batch
  *                     object can store.
  */
 SECP256K1_API secp256k1_batch_context* secp256k1_batch_context_create(
     const secp256k1_context* ctx,
-    size_t n_terms
+    size_t max_terms
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_WARN_UNUSED_RESULT;
 
 /** Destroy a secp256k1 batch context object (created in dynamically allocated memory).

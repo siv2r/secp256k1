@@ -124,10 +124,7 @@ int secp256k1_batch_context_add_schnorrsig(const secp256k1_context* ctx, secp256
             /* it will fail anyway */
         }
         printf("batch_add: Clearing the batch context for future use...\n");
-        secp256k1_batch_scratch_clear(&ctx->error_callback, batch_ctx);
-        if (!secp256k1_batch_scratch_alloc(&ctx->error_callback, batch_ctx)) {
-            return 0;
-        }
+        secp256k1_batch_scratch_clear(batch_ctx);
     }
 
     i = batch_ctx->len;
@@ -226,10 +223,7 @@ int secp256k1_batch_context_add_xonlypub_tweak(const secp256k1_context* ctx, sec
             /* it will fail anyway */
         }
         printf("batch_add_xonlypub_tweak: Clearing the batch context for future use...\n");
-        secp256k1_batch_scratch_clear(&ctx->error_callback, batch_ctx);
-        if (!secp256k1_batch_scratch_alloc(&ctx->error_callback, batch_ctx)) {
-            return 0;
-        }
+        secp256k1_batch_scratch_clear(batch_ctx);
     }
 
     i = batch_ctx->len;

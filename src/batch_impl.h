@@ -46,10 +46,7 @@ static size_t secp256k1_batch_scratch_size(int max_terms) {
 }
 
 /** Clears the scalar and points allocated on the batch context's scratch space */
-static void secp256k1_batch_scratch_clear(const secp256k1_callback* error_callback, secp256k1_batch_context* batch_ctx) {
-    secp256k1_scratch_apply_checkpoint(error_callback, batch_ctx->data, 0);
-    batch_ctx->scalars = NULL;
-    batch_ctx->points = NULL;
+static void secp256k1_batch_scratch_clear(secp256k1_batch_context* batch_ctx) {
     secp256k1_scalar_clear(&batch_ctx->sc_g);
     batch_ctx->len = 0;
 }

@@ -50,7 +50,6 @@ noinst_HEADERS += src/assumptions.h
 noinst_HEADERS += src/util.h
 noinst_HEADERS += src/scratch.h
 noinst_HEADERS += src/scratch_impl.h
-noinst_HEADERS += src/batch_impl.h
 noinst_HEADERS += src/selftest.h
 noinst_HEADERS += src/testrand.h
 noinst_HEADERS += src/testrand_impl.h
@@ -172,6 +171,7 @@ if BUILD_WINDOWS
 schnorr_example_LDFLAGS += -lbcrypt
 endif
 TESTS += schnorr_example
+if ENABLE_MODULE_BATCH
 noinst_PROGRAMS += batch_example
 batch_example_SOURCES = examples/batch.c
 batch_example_CPPFLAGS = -I$(top_srcdir)/include
@@ -181,6 +181,7 @@ if BUILD_WINDOWS
 batch_example_LDFLAGS += -lbcrypt
 endif
 TESTS += batch_example
+endif
 endif
 endif
 

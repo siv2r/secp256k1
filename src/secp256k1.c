@@ -21,7 +21,6 @@
 #include "eckey_impl.h"
 #include "hash_impl.h"
 #include "scratch_impl.h"
-#include "batch_impl.h"
 #include "selftest.h"
 
 #ifdef SECP256K1_NO_BUILD
@@ -177,23 +176,6 @@ secp256k1_scratch_space* secp256k1_scratch_space_create(const secp256k1_context*
 void secp256k1_scratch_space_destroy(const secp256k1_context *ctx, secp256k1_scratch_space* scratch) {
     VERIFY_CHECK(ctx != NULL);
     secp256k1_scratch_destroy(&ctx->error_callback, scratch);
-}
-
-secp256k1_batch_context* secp256k1_batch_context_create(const secp256k1_context* ctx, size_t max_terms) {
-    VERIFY_CHECK(ctx != NULL);
-    ARG_CHECK(max_terms > 0);
-    return secp256k1_batch_create(&ctx->error_callback, max_terms);
-}
-
-void secp256k1_batch_context_destroy(const secp256k1_context *ctx, secp256k1_batch_context* batch_ctx) {
-    VERIFY_CHECK(ctx != NULL);
-    secp256k1_batch_destroy(&ctx->error_callback, batch_ctx);
-}
-
-int secp256k1_batch_context_verify(const secp256k1_context *ctx, secp256k1_batch_context *batch_ctx) {
-    VERIFY_CHECK(ctx != NULL);
-    ARG_CHECK(batch_ctx != NULL);
-    return secp256k1_batch_verify(&ctx->error_callback, batch_ctx);
 }
 
 /* Mark memory as no-longer-secret for the purpose of analysing constant-time behaviour

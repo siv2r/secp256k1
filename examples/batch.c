@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <secp256k1.h>
+#include <secp256k1_batch.h>
 #include <secp256k1_schnorrsig.h>
 
 #include "random.h"
@@ -82,12 +83,14 @@ int generate_xonlypub_tweak_checks(secp256k1_context *ctx) {
 int main(void) {
     int ret;
     size_t i;
-    /* batch_context uses secp256k1_context only for the error callback function*/
+    /* batch object uses secp256k1_context only for the error callback function
+     * here, we create secp256k1_context that can sign and verify, only to generate
+     * input data (schnorrsigs, tweak checks) required for the batch */
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_batch_context *batch_ctx = secp256k1_batch_context_create(ctx, N_TERMS);
+    secp256k1_batch *batch = secp256k1_batch_create(ctx, N_TERMS);
 
     assert(ctx != NULL);
-    assert(batch_ctx != NULL);
+    assert(batch != NULL);
 
     /* key pair generation */
     printf("Creating a key pair.........................");
@@ -105,9 +108,9 @@ int main(void) {
     }
     printf("ok\n");
 
-    printf("Adding signatures to the batch context......");
+    printf("Adding signatures to the batch object.......");
     for (i = 0; i < N_SIGS; i++) {
-        ret = secp256k1_batch_context_add_schnorrsig(ctx, batch_ctx, sig[i], msg[i], sizeof(msg[i]), &pk);
+        ret = secp256k1_batch_add_schnorrsig(ctx, batch, sig[i], msg[i], sizeof(msg[i]), &pk);
         if(!ret) {
             printf("FAILED\n");
             return 1;
@@ -122,9 +125,9 @@ int main(void) {
     }
     printf("ok\n");
 
-    printf("Adding tweak checks to the batch context....");
+    printf("Adding tweak checks to the batch object.....");
     for (i = 0; i < N_CHECKS; i++) {
-        ret = secp256k1_batch_context_add_xonlypub_tweak(ctx, batch_ctx, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i]);
+        ret = secp256k1_batch_add_xonlypub_tweak(ctx, batch, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i]);
         if(!ret) {
             printf("FAILED\n");
             return 1;
@@ -132,14 +135,14 @@ int main(void) {
     }
     printf("ok\n");
 
-    printf("Verifying the batch context.................");
-    if(!secp256k1_batch_context_verify(ctx, batch_ctx)) {
+    printf("Verifying the batch object..................");
+    if(!secp256k1_batch_verify(ctx, batch)) {
         printf("FAILED\n");
         return 1;
     }
     printf("ok\n");
 
-    secp256k1_batch_context_destroy(ctx, batch_ctx);
+    secp256k1_batch_destroy(ctx, batch);
     secp256k1_context_destroy(ctx);
 
     return 0;

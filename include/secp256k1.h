@@ -58,15 +58,6 @@ typedef struct secp256k1_context_struct secp256k1_context;
  */
 typedef struct secp256k1_scratch_space_struct secp256k1_scratch_space;
 
-/** Opaque data structure that holds context information for schnorr batch verification.
- *
- *  The purpose of this structure is to store elliptic curve points, their scalars,
- *  and scalar of generator point participating in Multi-Scalar Point Multiplication
- *  computation. This computation is done by secp256k1_ecmult_strauss_batch or
- *  secp256k1_ecmult_pippenger_batch.
- */
-typedef struct secp256k1_batch_context_struct secp256k1_batch_context;
-
 /** Opaque data structure that holds a parsed and valid public key.
  *
  *  The exact representation of data inside is implementation defined and not
@@ -363,51 +354,6 @@ SECP256K1_API void secp256k1_scratch_space_destroy(
     const secp256k1_context* ctx,
     secp256k1_scratch_space* scratch
 ) SECP256K1_ARG_NONNULL(1);
-
-/** Create a secp256k1 batch context object (in dynamically allocated memory).
- *
- *  This function uses malloc to allocate memory. It is guaranteed that malloc is
- *  called at most twice for every call of this function.
- *
- *  Returns: a newly created batch context object.
- *  Args:        ctx:  an existing secp256k1_context object. Not to be confused
- *                     with the batch context object that this function creates.
- *  In:      max_terms:  max number of (scalar, curve point) pairs that the batch
- *                     object can store.
- */
-SECP256K1_API secp256k1_batch_context* secp256k1_batch_context_create(
-    const secp256k1_context* ctx,
-    size_t max_terms
-) SECP256K1_ARG_NONNULL(1) SECP256K1_WARN_UNUSED_RESULT;
-
-/** Destroy a secp256k1 batch context object (created in dynamically allocated memory).
- *
- *  The context pointer may not be used afterwards.
- *
- *  Args:       ctx: a secp256k1 context object.
- *        batch_ctx: an existing batch context to destroy, constructed
- *                   using secp256k1_batch_context_create
- */
-SECP256K1_API void secp256k1_batch_context_destroy(
-    const secp256k1_context* ctx,
-    secp256k1_batch_context* batch_ctx
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
-
-/** Verify the set of schnorr signatures or tweaked pubkeys present in the secp256k1_batch_context.
- *
- *  Returns: 1: correct schnorrsigs/tweaks
- *           0: incorrect schnorrsigs/tweaks
- *
- *  In particular, returns 1 if the batch context is empty (i.e, batch_ctx->len = 0).
- *
- *  Args:    ctx: a secp256k1 context object (can be initialized for none).
- *     batch_ctx: a secp256k1 batch context object that contains a
- *                set of schnorrsigs/tweaks.
- */
-SECP256K1_API int secp256k1_batch_context_verify(
-    const secp256k1_context *ctx,
-    secp256k1_batch_context *batch_ctx
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
 
 /** Parse a variable-length public key into the pubkey object.
  *

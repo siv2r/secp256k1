@@ -3,6 +3,7 @@
 
 #include "secp256k1.h"
 #include "secp256k1_extrakeys.h"
+#include "include/secp256k1_batch.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -164,8 +165,8 @@ SECP256K1_API int secp256k1_schnorrsig_sign_custom(
  *  Args:    ctx: a secp256k1 context object, initialized for verification.
  *  In:    sig64: pointer to the 64-byte signature to verify.
  *           msg: the message being verified. Can only be NULL if msglen is 0.
- *        msglen: length of the message
- *        pubkey: pointer to an x-only public key to verify with (cannot be NULL)
+ *        msglen: length of the message.
+ *        pubkey: pointer to an x-only public key to verify with (cannot be NULL).
  */
 SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_schnorrsig_verify(
     const secp256k1_context* ctx,
@@ -175,27 +176,26 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_schnorrsig_verify(
     const secp256k1_xonly_pubkey *pubkey
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(5);
 
-/** Adds the given schnorrsig verification data to secp256k1_batch_context.
+/** Adds the given schnorrsig verification data to secp256k1_batch.
  *
  *  Returns 1 on success, 0 on failure.
  *  Args:    ctx: a secp256k1 context object (can be initialized for none).
- *     batch_ctx: a secp256k1 batch context object created using
- *                the secp256k1_batch_context_create API
+ *         batch: a secp256k1 batch object created using `secp256k1_batch_create`.
  *  In:    sig64: pointer to the 64-byte signature to verify.
  *           msg: the message being verified. Can only be NULL if msglen is 0.
- *        msglen: length of the message
- *        pubkey: pointer to an x-only public key to verify with (cannot be NULL)
+ *        msglen: length of the message.
+ *        pubkey: pointer to an x-only public key to verify with (cannot be NULL).
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_context_add_schnorrsig(
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_add_schnorrsig(
     const secp256k1_context* ctx,
-    secp256k1_batch_context *batch_ctx,
+    secp256k1_batch *batch,
     const unsigned char *sig64,
     const unsigned char *msg,
     size_t msglen,
     const secp256k1_xonly_pubkey *pubkey
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(6);
 
-/** Adds the given tweaked pubkey, internal pubkey, and tweak32 to secp256k1_batch_context.
+/** Adds the given tweaked pubkey, internal pubkey, and tweak32 to secp256k1_batch.
  *
  *  The tweaked pubkey is represented by its 32-byte x-only serialization and
  *  its pk_parity, which can both be obtained by converting the result of
@@ -203,8 +203,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_context_add_schno
  *
  *  Returns 1 on success, 0 on failure.
  *  Args:            ctx: pointer to a context object initialized for verification.
- *             batch_ctx: a secp256k1 batch context object created using
- *                        the secp256k1_batch_context_create API.
+ *                 batch: a secp256k1 batch object created using `secp256k1_batch_create`.
  *  In: tweaked_pubkey32: pointer to a serialized xonly_pubkey.
  *     tweaked_pk_parity: the parity of the tweaked pubkey (whose serialization
  *                        is passed in as tweaked_pubkey32). This must match the
@@ -214,9 +213,9 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_context_add_schno
  *       internal_pubkey: pointer to an x-only public key object to apply the tweak to.
  *               tweak32: pointer to a 32-byte tweak.
  */
-SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_context_add_xonlypub_tweak(
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_add_xonlypub_tweak(
     const secp256k1_context* ctx,
-    secp256k1_batch_context *batch_ctx,
+    secp256k1_batch *batch,
     const unsigned char *tweaked_pubkey32,
     int tweaked_pk_parity,
     const secp256k1_xonly_pubkey *internal_pubkey,

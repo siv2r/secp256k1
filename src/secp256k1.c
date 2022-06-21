@@ -771,6 +771,7 @@ int secp256k1_tagged_sha256(const secp256k1_context* ctx, unsigned char *hash32,
 
 #ifdef ENABLE_MODULE_EXTRAKEYS
 # include "modules/extrakeys/main_impl.h"
+# include "modules/extrakeys/batch_add_impl.h"
 #endif
 
 #ifdef ENABLE_MODULE_SCHNORRSIG

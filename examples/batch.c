@@ -5,6 +5,7 @@
 #include <secp256k1.h>
 #include <secp256k1_batch.h>
 #include <secp256k1_schnorrsig.h>
+#include <secp256k1_extrakeys.h>
 
 #include "random.h"
 
@@ -127,7 +128,7 @@ int main(void) {
 
     printf("Adding tweak checks to the batch object.....");
     for (i = 0; i < N_CHECKS; i++) {
-        ret = secp256k1_batch_add_xonlypub_tweak(ctx, batch, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i]);
+        ret = secp256k1_batch_add_xonlypub_tweak_check(ctx, batch, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i]);
         if(!ret) {
             printf("FAILED\n");
             return 1;

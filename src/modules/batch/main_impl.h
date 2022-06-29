@@ -99,11 +99,21 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
     secp256k1_batch* batch = (secp256k1_batch*)checked_malloc(&ctx->error_callback, batch_size);
 
     VERIFY_CHECK(ctx != NULL);
-    ARG_CHECK(max_terms > 0);
+    ARG_CHECK(max_terms != 0);
+    /* Check that `max_terms` is less than half of the maximum size_t value. This is necessary because
+     * `batch_add_schnorrsig` and `batch_add_xonlypub_tweak_check` appends two (scalar, point) pairs
+     * for each input (sig/tweak) */
+    ARG_CHECK(max_terms <= SIZE_MAX / 2);
+    /* Check that max_terms is less than 2^31 to ensure the same behavior of this function on 32-bit
+     * and 64-bit platforms. */
+    ARG_CHECK(max_terms < ((uint32_t)1 << 31));
 
     if (batch != NULL) {
-        /* create scratch space inside batch object*/
+        /* create scratch space inside batch object, if that fails return NULL*/
         batch->data = secp256k1_scratch_create(&ctx->error_callback, batch_scratch_size);
+        if (batch->data == NULL) {
+            return NULL;
+        }
         /* allocate 2*max_terms scalars and points on scratch space */
         batch->capacity = 2*max_terms;
         if (!secp256k1_batch_scratch_alloc(&ctx->error_callback, batch)) {

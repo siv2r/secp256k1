@@ -96,7 +96,7 @@ static void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
 secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max_terms) {
     size_t batch_size = sizeof(secp256k1_batch);
     size_t batch_scratch_size = secp256k1_batch_scratch_size(2*max_terms);
-    secp256k1_batch* batch = (secp256k1_batch*)checked_malloc(&default_error_callback, batch_size);
+    secp256k1_batch* batch = (secp256k1_batch*)checked_malloc(&ctx->error_callback, batch_size);
 
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(max_terms > 0);

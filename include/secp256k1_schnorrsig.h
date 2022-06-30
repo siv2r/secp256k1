@@ -3,7 +3,7 @@
 
 #include "secp256k1.h"
 #include "secp256k1_extrakeys.h"
-#include "include/secp256k1_batch.h"
+#include "secp256k1_batch.h"
 
 #ifdef __cplusplus
 extern "C" {

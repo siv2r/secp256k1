@@ -5,12 +5,26 @@
 #include "src/hash.h"
 #include "src/modules/batch/main_impl.h"
 
-static int secp256k1_batch_schnorrsig_randomizer(const secp256k1_context *ctx, secp256k1_batch *batch, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
+static int secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const unsigned char *compressed_pk33) {
     secp256k1_sha256 sha256_cpy;
+
+    /* add schnorrsig data to sha256 object */
+    secp256k1_sha256_write(sha256, sig64, 64);
+    secp256k1_sha256_write(sha256, msg, msglen);
+    secp256k1_sha256_write(sha256, compressed_pk33, 33);
+
+    /* generate randomizer */
+    sha256_cpy = *sha256;
+    secp256k1_sha256_finalize(&sha256_cpy, randomizer32);
+
+    return 1;
+}
+
+static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ctx, secp256k1_batch *batch, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
+    int overflow;
     unsigned char randomizer[32];
     unsigned char buf[33];
     size_t buflen = sizeof(buf);
-    int overflow;
 
     /* We use compressed serialization here. If we would use
     * xonly_pubkey serialization and a user would wrongly memcpy
@@ -20,14 +34,9 @@ static int secp256k1_batch_schnorrsig_randomizer(const secp256k1_context *ctx, s
         return 0;
     }
 
-    /* add schnorrsig data to sha256 object */
-    secp256k1_sha256_write(&batch->sha256, sig64, 64);
-    secp256k1_sha256_write(&batch->sha256, msg, msglen);
-    secp256k1_sha256_write(&batch->sha256, buf, buflen);
-
-    /* generate randomizer */
-    sha256_cpy = batch->sha256;
-    secp256k1_sha256_finalize(&sha256_cpy, randomizer);
+    if(!secp256k1_batch_schnorrsig_randomizer_gen(randomizer, &batch->sha256, sig64, msg, msglen, buf)) {
+        return 0;
+    }
     secp256k1_scalar_set_b32(r, randomizer, &overflow);
     VERIFY_CHECK(overflow == 0);
 
@@ -112,7 +121,7 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
     secp256k1_schnorrsig_challenge(&e, &sig64[0], msg, msglen, buf);
 
     /* Compute ai */
-    if (!secp256k1_batch_schnorrsig_randomizer(ctx, batch, &ai, sig64, msg, msglen, pubkey)) {
+    if (!secp256k1_batch_schnorrsig_randomizer_set(ctx, batch, &ai, sig64, msg, msglen, pubkey)) {
         return 0;
     }
 

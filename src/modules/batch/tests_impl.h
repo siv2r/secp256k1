@@ -5,11 +5,16 @@
 
 #define MAX_TERMS 10
 
+/*
+ todo: separate tests of batch_add_* from (create, destroy, verify)
+ since, compiling libsecp with batch module and without
+ schnorrsig, won't compile add functions. So, can't use them in tests
+*/
 
 /* Tests for the equality of two sha256 structs. This function only produces a
  * correct result if an integer multiple of 64 many bytes have been written
  * into the hash functions. */
-void batch_test_sha256_eq(const secp256k1_sha256 *sha1, const secp256k1_sha256 *sha2) {
+void test_batch_sha256_eq(const secp256k1_sha256 *sha1, const secp256k1_sha256 *sha2) {
     /* Is buffer fully consumed? */
     CHECK((sha1->bytes & 0x3F) == 0);
 
@@ -26,7 +31,66 @@ void test_batch_sha256_tagged(void) {
 
     secp256k1_sha256_initialize_tagged(&sha, (unsigned char *) tag, sizeof(tag));
     secp256k1_batch_sha256_tagged(&sha_optimized);
-    batch_test_sha256_eq(&sha, &sha_optimized);
+    test_batch_sha256_eq(&sha, &sha_optimized);
+}
+
+/* Checks that a bit flip in the n_flip-th argument (that has n_bytes many
+ * bytes) changes the hash function */
+void batch_schnorrsig_randomizer_gen_bitflip(secp256k1_sha256 *sha, unsigned char **args, size_t n_flip, size_t n_bytes, size_t msglen) {
+    unsigned char randomizers[2][32];
+    secp256k1_sha256 sha_cpy;
+    sha_cpy = *sha;
+    CHECK(secp256k1_batch_schnorrsig_randomizer_gen(randomizers[0], &sha_cpy, args[0], args[1], msglen, args[2]) == 1);
+    secp256k1_testrand_flip(args[n_flip], n_bytes);
+    sha_cpy = *sha;
+    CHECK(secp256k1_batch_schnorrsig_randomizer_gen(randomizers[1], &sha_cpy, args[0], args[1], msglen, args[2]) == 1);
+    CHECK(secp256k1_memcmp_var(randomizers[0], randomizers[1], 32) != 0);
+}
+
+/*todo: make n_sigs var global macro? then, wouldn't it affects n_sigs api tests?*/
+void run_batch_schnorrsig_randomizer_gen_tests(void) {
+    secp256k1_sha256 sha;
+    size_t n_sigs = 20;
+    unsigned char msg[32];
+    size_t msglen = sizeof(msg);
+    unsigned char sig[64];
+    unsigned char compressed_pk[33];
+    unsigned char *args[3];
+    uint8_t rand;
+    size_t i; /* loops through n_sigs */
+    int j; /* loops through count */
+
+    secp256k1_batch_sha256_tagged(&sha);
+
+    for (i = 0; i < n_sigs; i++) {
+        /* generate i-th schnorrsig verify data */
+        secp256k1_testrand256(msg);
+        secp256k1_testrand256(&sig[0]);
+        secp256k1_testrand256(&sig[32]);
+        secp256k1_testrand256(&compressed_pk[1]);
+        rand = secp256k1_testrand_int(2) + 2; /* randomly choose 2 or 3 */
+        compressed_pk[0] = (unsigned char)rand;
+
+        /* check that bitflip in an argument results in different nonces */
+        args[0] = sig;
+        args[1] = msg;
+        args[2] = compressed_pk;
+
+        for (j = 0; j < count; j++) {
+            batch_schnorrsig_randomizer_gen_bitflip(&sha, args, 0, 64, msglen);
+            batch_schnorrsig_randomizer_gen_bitflip(&sha, args, 1, 32, msglen);
+            batch_schnorrsig_randomizer_gen_bitflip(&sha, args, 2, 33, msglen);
+        }
+
+        /* write i-th schnorrsig verify data to the sha object
+         * this is required for generating the next randomizer */
+        secp256k1_sha256_write(&sha, sig, 64);
+        secp256k1_sha256_write(&sha, msg, msglen);
+        secp256k1_sha256_write(&sha, compressed_pk, 33);
+
+    }
+
+    /* todo: msglen difference test?? */
 }
 
 void test_batch_api(void) {
@@ -113,6 +177,7 @@ void test_batch_api(void) {
 void run_batch_tests(void) {
     test_batch_api();
     test_batch_sha256_tagged();
+    run_batch_schnorrsig_randomizer_gen_tests();
 }
 
 #endif /* SECP256K1_MODULE_BATCH_TESTS_H */

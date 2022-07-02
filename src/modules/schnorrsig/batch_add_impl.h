@@ -5,7 +5,7 @@
 #include "src/hash.h"
 #include "src/modules/batch/main_impl.h"
 
-static int secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const unsigned char *compressed_pk33) {
+static void secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const unsigned char *compressed_pk33) {
     secp256k1_sha256 sha256_cpy;
 
     /* add schnorrsig data to sha256 object */
@@ -16,8 +16,6 @@ static int secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer32
     /* generate randomizer */
     sha256_cpy = *sha256;
     secp256k1_sha256_finalize(&sha256_cpy, randomizer32);
-
-    return 1;
 }
 
 static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ctx, secp256k1_batch *batch, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
@@ -34,9 +32,7 @@ static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ct
         return 0;
     }
 
-    if(!secp256k1_batch_schnorrsig_randomizer_gen(randomizer, &batch->sha256, sig64, msg, msglen, buf)) {
-        return 0;
-    }
+    secp256k1_batch_schnorrsig_randomizer_gen(randomizer, &batch->sha256, sig64, msg, msglen, buf);
     secp256k1_scalar_set_b32(r, randomizer, &overflow);
     VERIFY_CHECK(overflow == 0);
 

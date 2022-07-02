@@ -19,10 +19,10 @@ static void secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer3
 }
 
 static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ctx, secp256k1_batch *batch, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
-    int overflow;
     unsigned char randomizer[32];
     unsigned char buf[33];
     size_t buflen = sizeof(buf);
+    int overflow;
 
     /* We use compressed serialization here. If we would use
     * xonly_pubkey serialization and a user would wrongly memcpy

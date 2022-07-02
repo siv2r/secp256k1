@@ -5,10 +5,23 @@
 #include "src/hash.h"
 #include "src/modules/batch/main_impl.h"
 
-static int secp256k1_batch_xonlypub_tweak_check_randomizer(const secp256k1_context* ctx, secp256k1_batch *batch, secp256k1_scalar *r, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
+static void secp256k1_batch_add_xonlypub_tweak_check_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const unsigned char *internal_pk33, const unsigned char *tweak32) {
     secp256k1_sha256 sha256_cpy;
-    unsigned char randomizer[32];
     unsigned char parity = (unsigned char) tweaked_pk_parity;
+
+    /* add tweaked pubkey check data to sha object */
+    secp256k1_sha256_write(sha256, tweaked_pubkey32, 32);
+    secp256k1_sha256_write(sha256, &parity, sizeof(parity));
+    secp256k1_sha256_write(sha256, tweak32, 32);
+    secp256k1_sha256_write(sha256, internal_pk33, 33);
+
+    /* generate randomizer */
+    sha256_cpy = *sha256;
+    secp256k1_sha256_finalize(&sha256_cpy, randomizer32);
+}
+
+static int secp256k1_batch_add_xonlypub_tweak_check_randomizer_set(const secp256k1_context* ctx, secp256k1_batch *batch, secp256k1_scalar *r, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
+    unsigned char randomizer[32];
     unsigned char internal_buf[33];
     size_t internal_buflen = sizeof(internal_buf);
     int overflow;
@@ -21,15 +34,7 @@ static int secp256k1_batch_xonlypub_tweak_check_randomizer(const secp256k1_conte
         return 0;
     }
 
-    /* add tweaked pubkey check data to sha object */
-    secp256k1_sha256_write(&batch->sha256, tweaked_pubkey32, 32);
-    secp256k1_sha256_write(&batch->sha256, &parity, sizeof(parity));
-    secp256k1_sha256_write(&batch->sha256, tweak32, 32);
-    secp256k1_sha256_write(&batch->sha256, internal_buf, internal_buflen);
-
-    /* generate randomizer */
-    sha256_cpy = batch->sha256;
-    secp256k1_sha256_finalize(&sha256_cpy, randomizer);
+    secp256k1_batch_add_xonlypub_tweak_check_randomizer_gen(randomizer, &batch->sha256, tweaked_pubkey32, tweaked_pk_parity, internal_buf, tweak32);
     secp256k1_scalar_set_b32(r, randomizer, &overflow);
     VERIFY_CHECK(overflow == 0);
 
@@ -112,9 +117,7 @@ int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp2
     secp256k1_gej_set_ge(&batch->points[i+1], &pk);
 
     /* Compute ai */
-    if (!secp256k1_batch_xonlypub_tweak_check_randomizer(ctx, batch, &ai, tweaked_pubkey32, tweaked_pk_parity, internal_pubkey, tweak32)) {
-        return 0;
-    }
+    secp256k1_batch_add_xonlypub_tweak_check_randomizer_set(ctx, batch, &ai, tweaked_pubkey32, tweaked_pk_parity, internal_pubkey, tweak32);
 
     /* append scalars -ai, ai respectively to scratch space */
     secp256k1_scalar_negate(&tmp, &ai);

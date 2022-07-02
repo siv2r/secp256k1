@@ -176,6 +176,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_schnorrsig_verify(
     const secp256k1_xonly_pubkey *pubkey
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(5);
 
+#ifdef ENABLE_MODULE_BATCH
 /** Adds the given schnorrsig verification data to secp256k1_batch.
  *
  *  Returns 1 on success, 0 on failure.
@@ -194,6 +195,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_add_schnorrsig(
     size_t msglen,
     const secp256k1_xonly_pubkey *pubkey
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(6);
+#endif
 
 #ifdef __cplusplus
 }

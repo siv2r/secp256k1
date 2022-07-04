@@ -35,7 +35,7 @@ typedef struct secp256k1_batch_struct secp256k1_batch;
  *  Returns: a newly created batch object.
  *  Args:        ctx:  an existing secp256k1_context object. Not to be confused
  *                     with the batch object object that this function creates.
- *  In:      max_terms:  max number of (scalar, curve point) pairs that the batch
+ *  In:    max_terms:  max number of (scalar, curve point) pairs that the batch
  *                     object can store.
  */
 SECP256K1_API secp256k1_batch* secp256k1_batch_create(
@@ -48,7 +48,7 @@ SECP256K1_API secp256k1_batch* secp256k1_batch_create(
  *  The batch object's pointer may not be used afterwards.
  *
  *  Args:       ctx: a secp256k1 context object.
- *        batch: an existing batch object to destroy, constructed
+ *            batch: an existing batch object to destroy, constructed
  *                   using secp256k1_batch_create
  */
 SECP256K1_API void secp256k1_batch_destroy(
@@ -56,15 +56,30 @@ SECP256K1_API void secp256k1_batch_destroy(
     secp256k1_batch* batch
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
 
-/** Verify the set of schnorr signatures or tweaked pubkeys present in the secp256k1_batch.
+/** Checks if the batch is valid.
  *
- *  Returns: 1: correct schnorrsigs/tweaks
- *           0: incorrect schnorrsigs/tweaks
+ *  A batch is said to be valid if it can be used by any secp256k1_batch_add_* API
  *
- *  In particular, returns 1 if the batch object is empty (i.e, batch->len = 0).
+ *  Returns: 1: valid batch
+ *           0: invalid batch
  *
  *  Args:    ctx: a secp256k1 context object (can be initialized for none).
- *     batch: a secp256k1 batch object that contains a set of schnorrsigs/tweaks.
+ *         batch: a secp256k1 batch object that contains a set of schnorrsigs/tweaks.
+ */
+SECP256K1_API int secp256k1_batch_isvalid(
+    const secp256k1_context *ctx,
+    const secp256k1_batch *batch
+) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
+
+/** Verify the set of schnorr signatures or tweaked pubkeys present in the secp256k1_batch.
+ *
+ *  Returns: 1: every schnorrsig/tweak (in batch) is valid
+ *           0: atleaset one of the schnorrsig/tweak (in batch) is invalid
+ *
+ *  In particular, returns 1 if the batch object is empty (does not contain any schnorrsigs/tweaks).
+ *
+ *  Args:    ctx: a secp256k1 context object (can be initialized for none).
+ *         batch: a secp256k1 batch object that contains a set of schnorrsigs/tweaks.
  */
 SECP256K1_API int secp256k1_batch_verify(
     const secp256k1_context *ctx,

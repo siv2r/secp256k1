@@ -18,6 +18,7 @@ env:
   ECDH: no
   RECOVERY: no
   SCHNORRSIG: no
+  BATCH: no
   ### test options
   SECP256K1_TEST_ITERS:
   BENCH: yes
@@ -67,12 +68,12 @@ task:
   << : *LINUX_CONTAINER
   matrix: &ENV_MATRIX
     - env: {WIDEMUL:  int64,  RECOVERY: yes}
-    - env: {WIDEMUL:  int64,                 ECDH: yes, SCHNORRSIG: yes}
+    - env: {WIDEMUL:  int64,                 ECDH: yes, SCHNORRSIG: yes, EXPERIMENTAL: yes, BATCH: yes}
     - env: {WIDEMUL: int128}
-    - env: {WIDEMUL: int128,  RECOVERY: yes,            SCHNORRSIG: yes}
-    - env: {WIDEMUL: int128,                 ECDH: yes, SCHNORRSIG: yes}
+    - env: {WIDEMUL: int128,  RECOVERY: yes,            SCHNORRSIG: yes, EXPERIMENTAL: yes, BATCH: yes}
+    - env: {WIDEMUL: int128,                 ECDH: yes, SCHNORRSIG: yes, EXPERIMENTAL: yes, BATCH: yes}
     - env: {WIDEMUL: int128,  ASM: x86_64}
-    - env: {                  RECOVERY: yes,            SCHNORRSIG: yes}
+    - env: {                  RECOVERY: yes,            SCHNORRSIG: yes, EXPERIMENTAL: yes, BATCH: yes}
     - env: {BUILD: distcheck, WITH_VALGRIND: no, CTIMETEST: no, BENCH: no}
     - env: {CPPFLAGS: -DDETERMINISTIC}
     - env: {CFLAGS: -O0, CTIMETEST: no}
@@ -96,6 +97,8 @@ task:
     ECDH: yes
     RECOVERY: yes
     SCHNORRSIG: yes
+    EXPERIMENTAL: yes
+    BATCH: yes
   matrix:
     - env:
         CC: i686-linux-gnu-gcc
@@ -178,6 +181,8 @@ task:
     ECDH: yes
     RECOVERY: yes
     SCHNORRSIG: yes
+    EXPERIMENTAL: yes
+    BATCH: yes
     CTIMETEST: no
   << : *MERGE_BASE
   test_script:
@@ -197,6 +202,8 @@ task:
     ECDH: yes
     RECOVERY: yes
     SCHNORRSIG: yes
+    EXPERIMENTAL: yes
+    BATCH: yes
     CTIMETEST: no
   matrix:
     - env: {}
@@ -217,6 +224,8 @@ task:
     ECDH: yes
     RECOVERY: yes
     SCHNORRSIG: yes
+    EXPERIMENTAL: yes
+    BATCH: yes
     CTIMETEST: no
   << : *MERGE_BASE
   test_script:
@@ -234,6 +243,8 @@ task:
     ECDH: yes
     RECOVERY: yes
     SCHNORRSIG: yes
+    EXPERIMENTAL: yes
+    BATCH: yes
     CTIMETEST: no
   << : *MERGE_BASE
   test_script:
@@ -271,6 +282,8 @@ task:
     RECOVERY: yes
     EXPERIMENTAL: yes
     SCHNORRSIG: yes
+    EXPERIMENTAL: yes
+    BATCH: yes
     CTIMETEST: no
     # Set non-essential options that affect the CLI messages here.
     # (They depend on the user's taste, so we don't want to set them automatically in configure.ac.)
@@ -304,6 +317,8 @@ task:
     ECDH: yes
     RECOVERY: yes
     SCHNORRSIG: yes
+    EXPERIMENTAL: yes
+    BATCH: yes
     CTIMETEST: no
   matrix:
     - name: "Valgrind (memcheck)"
@@ -352,6 +367,8 @@ task:
     ECDH: yes
     RECOVERY: yes
     SCHNORRSIG: yes
+    EXPERIMENTAL: yes
+    BATCH: yes
   << : *MERGE_BASE
   test_script:
     - ./ci/cirrus.sh

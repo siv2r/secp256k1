@@ -78,6 +78,10 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
     ARG_CHECK(msg != NULL || msglen == 0);
     ARG_CHECK(pubkey != NULL);
 
+    if (batch->result == 0) {
+        return 0;
+    }
+
     if (!secp256k1_fe_set_b32(&rx, &sig64[0])) {
         return 0;
     }
@@ -94,15 +98,10 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
     if(batch_len_reset) {
         *batch_len_reset = 0;
     }
-    /* run verify if batch object's scratch is full */
+    /* if insufficient space in batch, verify the inputs (stored in curr batch) and
+     * save the result. Then, clear the batch to extend its capacity */
     if (batch->capacity - batch->len < BATCH_SCHNORRSIG_SCRATCH_OBJS) {
-        printf("\nbatch_add: Batch object is full...\n");
-        printf("batch_add: Verifying the batch object...\n");
-        if (!secp256k1_batch_verify(ctx, batch)) {
-            /* tell user there is no point in adding sigs/tweaks?? */
-            /* it will fail anyway */
-        }
-        printf("batch_add: Clearing the batch object for future use...\n");
+        secp256k1_batch_verify(ctx, batch);
         secp256k1_batch_scratch_clear(batch);
         if(batch_len_reset) {
             *batch_len_reset = 1;

@@ -179,7 +179,9 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_schnorrsig_verify(
 #ifdef ENABLE_MODULE_BATCH
 /** Adds the given schnorrsig verification data to secp256k1_batch.
  *
- *  Returns 1 on success, 0 on failure.
+ *  Returns: 1: successfully added the verify data to the batch
+ *           0: unparseable signature or invalid batch (according to
+ *              secp256k1_batch_isvalid).
  *  Args:    ctx: a secp256k1 context object (can be initialized for none).
  *         batch: a secp256k1 batch object created using `secp256k1_batch_create`.
  *  In:    sig64: pointer to the 64-byte signature to verify.

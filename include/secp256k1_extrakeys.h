@@ -250,7 +250,9 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_keypair_xonly_tweak_add
  *  its pk_parity, which can both be obtained by converting the result of
  *  tweak_add to a secp256k1_xonly_pubkey.
  *
- *  Returns 1 on success, 0 on failure.
+ *  Returns: 1: successfully added the tweak check data to the batch
+ *           0: unparseable tweak check data or invalid batch (according to
+ *              secp256k1_batch_isvalid).
  *  Args:            ctx: pointer to a context object initialized for verification.
  *                 batch: a secp256k1 batch object created using `secp256k1_batch_create`.
  *  In: tweaked_pubkey32: pointer to a serialized xonly_pubkey.

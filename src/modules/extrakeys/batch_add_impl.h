@@ -81,6 +81,10 @@ int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp2
     ARG_CHECK(tweaked_pubkey32 != NULL);
     ARG_CHECK(tweak32 != NULL);
 
+    if(batch->result == 0) {
+        return 0;
+    }
+
     if (!secp256k1_fe_set_b32(&qx, tweaked_pubkey32)) {
         return 0;
     }
@@ -98,15 +102,10 @@ int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp2
         *batch_len_reset = 0;
     }
 
-    /* run verify if batch object's scratch is full */
+    /* if insufficient space in batch, verify the inputs (stored in curr batch) and
+     * save the result. Then, clear the batch to extend its capacity */
     if (batch->capacity - batch->len < BATCH_TWEAK_CHECK_SCRATCH_OBJS) {
-        printf("\nbatch_add_xonlypub_tweak: Batch object is full...\n");
-        printf("batch_add_xonlypub_tweak: Verifying the batch object...\n");
-        if (!secp256k1_batch_verify(ctx, batch)) {
-            /* tell user there is no point in adding sigs/tweaks?? */
-            /* it will fail anyway */
-        }
-        printf("batch_add_xonlypub_tweak: Clearing the batch object for future use...\n");
+        secp256k1_batch_verify(ctx, batch);
         secp256k1_batch_scratch_clear(batch);
         if(batch_len_reset) {
             *batch_len_reset = 1;

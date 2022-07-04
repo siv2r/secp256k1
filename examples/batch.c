@@ -112,7 +112,13 @@ int main(void) {
 
     printf("Adding signatures to the batch object.......");
     for (i = 0; i < N_SIGS; i++) {
-        ret = secp256k1_batch_add_schnorrsig(ctx, batch, sig[i], msg[i], sizeof(msg[i]), &pk, &batch_reset);
+        if(secp256k1_batch_isvalid(ctx, batch)) {
+            ret = secp256k1_batch_add_schnorrsig(ctx, batch, sig[i], msg[i], sizeof(msg[i]), &pk, &batch_reset);
+        } else {
+            printf("INVALID BATCH\n");
+            return 1;
+        }
+
         if(!ret) {
             printf("FAILED\n");
             return 1;
@@ -129,7 +135,13 @@ int main(void) {
 
     printf("Adding tweak checks to the batch object.....");
     for (i = 0; i < N_CHECKS; i++) {
-        ret = secp256k1_batch_add_xonlypub_tweak_check(ctx, batch, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i], &batch_reset);
+        if(secp256k1_batch_isvalid(ctx, batch)) {
+            ret = secp256k1_batch_add_xonlypub_tweak_check(ctx, batch, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i], &batch_reset);
+        } else {
+            printf("INVALID BATCH\n");
+            return 1;
+        }
+
         if(!ret) {
             printf("FAILED\n");
             return 1;

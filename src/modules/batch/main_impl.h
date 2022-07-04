@@ -146,7 +146,14 @@ void secp256k1_batch_destroy(const secp256k1_context *ctx, secp256k1_batch *batc
     }
 }
 
-/** Batch verifies the schnorrsig/tweaks present in the batch object.
+int secp256k1_batch_isvalid(const secp256k1_context *ctx, const secp256k1_batch *batch) {
+    VERIFY_CHECK(ctx != NULL);
+    ARG_CHECK(batch != NULL);
+
+    return batch->result;
+}
+
+/** verifies the schnorrsig/tweaks present in the batch object.
  *
  * For computing the multi-scalar point multiplication, calls secp256k1_ecmult_strauss_batch
  * on a scratch space filled with 2n points and 2n scalars, where n = no of terms (user input

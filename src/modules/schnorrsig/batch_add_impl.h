@@ -5,6 +5,10 @@
 #include "src/hash.h"
 #include "src/modules/batch/main_impl.h"
 
+/* The number of objects allocated on the scratch space by
+ * secp256k1_batch_add_schnorrsig*/
+#define BATCH_SCHNORRSIG_SCRATCH_OBJS 2
+
 static void secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const unsigned char *compressed_pk33) {
     secp256k1_sha256 sha256_cpy;
 
@@ -57,7 +61,7 @@ static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ct
  *
  * This function's algorithm is based on secp256k1_schnorrsig_verify.
  */
-int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch *batch, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
+int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch *batch, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey, int *batch_len_reset) {
     secp256k1_scalar s;
     secp256k1_scalar e;
     secp256k1_scalar ai;
@@ -87,8 +91,11 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
         return 0;
     }
 
+    if(batch_len_reset) {
+        *batch_len_reset = 0;
+    }
     /* run verify if batch object's scratch is full */
-    if (batch->capacity - batch->len < 2) {
+    if (batch->capacity - batch->len < BATCH_SCHNORRSIG_SCRATCH_OBJS) {
         printf("\nbatch_add: Batch object is full...\n");
         printf("batch_add: Verifying the batch object...\n");
         if (!secp256k1_batch_verify(ctx, batch)) {
@@ -97,6 +104,9 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
         }
         printf("batch_add: Clearing the batch object for future use...\n");
         secp256k1_batch_scratch_clear(batch);
+        if(batch_len_reset) {
+            *batch_len_reset = 1;
+        }
     }
 
     i = batch->len;

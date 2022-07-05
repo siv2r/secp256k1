@@ -170,6 +170,10 @@ int secp256k1_batch_verify(const secp256k1_context *ctx, secp256k1_batch *batch)
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(batch != NULL);
 
+    if(batch->result == 0) {
+        return 0;
+    }
+
     if (batch->len > 0) {
         if(batch->scalars != NULL && batch->points != NULL) {
             mid_res = secp256k1_ecmult_strauss_batch_prealloc_scratch(&ctx->error_callback, batch->data, &resj, batch->scalars, batch->points, &batch->sc_g, batch->len) && secp256k1_gej_is_infinity(&resj);

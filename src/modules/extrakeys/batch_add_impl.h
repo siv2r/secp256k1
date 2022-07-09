@@ -6,7 +6,7 @@
 #include "src/modules/batch/main_impl.h"
 
 /* The number of objects allocated on the scratch space by
- * secp256k1_batch_add_schnorrsig*/
+ * secp256k1_batch_add_xonlypub_tweak_check */
 #define BATCH_TWEAK_CHECK_SCRATCH_OBJS 2
 
 static void secp256k1_batch_xonlypub_tweak_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *tweaked_pubkey32, const unsigned char *tweaked_pk_parity, const unsigned char *internal_pk33, const unsigned char *tweak32) {
@@ -65,7 +65,7 @@ static int secp256k1_batch_xonlypub_tweak_randomizer_set(const secp256k1_context
  *
  * This function's algorithm is based on secp256k1_xonly_pubkey_tweak_add_check.
  */
-int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp256k1_batch *batch, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey, const unsigned char *tweak32, int *batch_len_reset) {
+int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp256k1_batch *batch, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
     secp256k1_scalar tweak;
     secp256k1_scalar ai;
     secp256k1_scalar tmp;
@@ -98,18 +98,11 @@ int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp2
         return 0;
     }
 
-    if(batch_len_reset) {
-        *batch_len_reset = 0;
-    }
-
     /* if insufficient space in batch, verify the inputs (stored in curr batch) and
      * save the result. Then, clear the batch to extend its capacity */
     if (batch->capacity - batch->len < BATCH_TWEAK_CHECK_SCRATCH_OBJS) {
         secp256k1_batch_verify(ctx, batch);
         secp256k1_batch_scratch_clear(batch);
-        if(batch_len_reset) {
-            *batch_len_reset = 1;
-        }
     }
 
     i = batch->len;

@@ -55,7 +55,6 @@ void test_batch_api(void) {
     secp256k1_batch *batch_vrfy;
     secp256k1_batch *batch_both;
     secp256k1_batch *batch_sttc;
-    int batch_reset; /* checks batch limit exceed */
     int ecount;
     size_t i;
 
@@ -119,22 +118,15 @@ void test_batch_api(void) {
 
     /* secp256k1_batch_add tests for batch_none */
     ecount = 0;
-    /* CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], msg[0], sizeof(msg[0]), &pk, &batch_reset) == 1);
-    CHECK(batch_reset == 0);
-    CHECK(ecount == 0);
-    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], msg[0], sizeof(msg[0]), &pk, &batch_reset) == 1);
-    CHECK(batch_reset == 1);
-    CHECK(ecount == 0); */
-    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, NULL, msg[0], sizeof(msg[0]), &pk, &batch_reset) == 0);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, NULL, msg[0], sizeof(msg[0]), &pk) == 0);
     CHECK(ecount == 1);
-    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], NULL, sizeof(msg[0]), &pk, &batch_reset) == 0);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], NULL, sizeof(msg[0]), &pk) == 0);
     CHECK(ecount == 2);
-    /* todo: should batch add return 1, here? --> this fails on verify */
-    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], NULL, 0, &pk, &batch_reset) == 1);
-    CHECK(ecount == 2); /*todo: shouldn't this fail, since ARG_CHECK(msg != NULL || msglen  == 0)?*/
-    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], msg[0], sizeof(msg[0]), NULL, &batch_reset) == 0);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], NULL, 0, &pk) == 1);
+    CHECK(ecount == 2);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], msg[0], sizeof(msg[0]), NULL) == 0);
     CHECK(ecount == 3);
-    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], msg[0], sizeof(msg[0]), &zero_pk, &batch_reset) == 0);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], msg[0], sizeof(msg[0]), &zero_pk) == 0);
     CHECK(ecount == 4);
 
     /* secp256k1_batch_add_tests for batch_sign */
@@ -147,11 +139,11 @@ void test_batch_api(void) {
     ecount = 0;
     for (i = 0; i < N_SIGS; i++) {
         CHECK(secp256k1_batch_isvalid(ctx, batch_both) == 1);
-        CHECK(secp256k1_batch_add_schnorrsig(ctx, batch_both, sig[i], msg[i], sizeof(msg[i]), &pk, &batch_reset) == 1);
+        CHECK(secp256k1_batch_add_schnorrsig(ctx, batch_both, sig[i], msg[i], sizeof(msg[i]), &pk) == 1);
     }
     for (i = 0; i < N_TWK_CHECKS; i++) {
         CHECK(secp256k1_batch_isvalid(ctx, batch_both));
-        CHECK(secp256k1_batch_add_xonlypub_tweak_check(ctx, batch_both, tweaked_pk[i], tweaked_pk_parity[i], &pk, tweak[i], &batch_reset));
+        CHECK(secp256k1_batch_add_xonlypub_tweak_check(ctx, batch_both, tweaked_pk[i], tweaked_pk_parity[i], &pk, tweak[i]));
     }
 
     ecount = 0;

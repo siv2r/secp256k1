@@ -263,8 +263,6 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_keypair_xonly_tweak_add
  *                        this function will fail.
  *       internal_pubkey: pointer to an x-only public key object to apply the tweak to.
  *               tweak32: pointer to a 32-byte tweak.
- *           batch_reset: non-zero if the batch was cleared (due to insufficient space),
- *                        zero otherwise (can be NULL).
  */
 SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_add_xonlypub_tweak_check(
     const secp256k1_context* ctx,
@@ -272,8 +270,7 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_batch_add_xonlypub_twea
     const unsigned char *tweaked_pubkey32,
     int tweaked_pk_parity,
     const secp256k1_xonly_pubkey *internal_pubkey,
-    const unsigned char *tweak32,
-    int *batch_reset
+    const unsigned char *tweak32
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(5) SECP256K1_ARG_NONNULL(6);
 #endif
 

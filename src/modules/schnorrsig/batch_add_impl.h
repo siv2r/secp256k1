@@ -61,7 +61,7 @@ static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ct
  *
  * This function's algorithm is based on secp256k1_schnorrsig_verify.
  */
-int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch *batch, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey, int *batch_len_reset) {
+int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch *batch, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
     secp256k1_scalar s;
     secp256k1_scalar e;
     secp256k1_scalar ai;
@@ -95,17 +95,11 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
         return 0;
     }
 
-    if(batch_len_reset) {
-        *batch_len_reset = 0;
-    }
     /* if insufficient space in batch, verify the inputs (stored in curr batch) and
      * save the result. Then, clear the batch to extend its capacity */
     if (batch->capacity - batch->len < BATCH_SCHNORRSIG_SCRATCH_OBJS) {
         secp256k1_batch_verify(ctx, batch);
         secp256k1_batch_scratch_clear(batch);
-        if(batch_len_reset) {
-            *batch_len_reset = 1;
-        }
     }
 
     i = batch->len;

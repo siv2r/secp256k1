@@ -95,24 +95,24 @@ void test_batch_api(void) {
     /** main test body **/
     /* todo: need to add tests for 1/4th, 3/4th of MAX_TERMS size? */
     ecount = 0;
-    batch_none = secp256k1_batch_create(none, 1);
+    batch_none = secp256k1_batch_create(none, 1, NULL);
     CHECK(batch_none != NULL);
     CHECK(ecount == 0);
-    batch_sign = secp256k1_batch_create(sign, MAX_TERMS/2);
+    batch_sign = secp256k1_batch_create(sign, MAX_TERMS/2, NULL);
     CHECK(batch_sign != NULL);
     CHECK(ecount == 0);
-    batch_vrfy = secp256k1_batch_create(vrfy, MAX_TERMS-1);
+    batch_vrfy = secp256k1_batch_create(vrfy, MAX_TERMS-1, NULL);
     CHECK(batch_vrfy != NULL);
     CHECK(ecount == 0);
-    batch_both = secp256k1_batch_create(both, MAX_TERMS);
+    batch_both = secp256k1_batch_create(both, MAX_TERMS, NULL);
     CHECK(batch_both != NULL);
     CHECK(ecount == 0);
     /* ARG_CHECK(max_terms != 0) in `batch_create` should fail*/
-    batch_sttc = secp256k1_batch_create(sttc, 0);
+    batch_sttc = secp256k1_batch_create(sttc, 0, NULL);
     CHECK(batch_sttc == NULL);
     CHECK(ecount == 1);
     /* ARG_CHECK(max_terms <= SIZE_MAX/2) in `batch_create` should fail*/
-    batch_sttc = secp256k1_batch_create(sttc, SIZE_MAX - 1);
+    batch_sttc = secp256k1_batch_create(sttc, SIZE_MAX - 1, NULL);
     CHECK(batch_sttc == NULL);
     CHECK(ecount == 2);
 

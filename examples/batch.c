@@ -88,7 +88,16 @@ int main(void) {
      * here, we create secp256k1_context that can sign and verify, only to generate
      * input data (schnorrsigs, tweak checks) required for the batch */
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    secp256k1_batch *batch = secp256k1_batch_create(ctx, N_TERMS);
+    secp256k1_batch *batch;
+    unsigned char auxiliary_rand[16];
+
+    /* Generate 16 bytes of randomness to use during batch creation. */
+    if (!fill_random(auxiliary_rand, sizeof(auxiliary_rand))) {
+        printf("Failed to generate randomness\n");
+        return 1;
+    }
+
+    batch = secp256k1_batch_create(ctx, N_TERMS, auxiliary_rand);
 
     assert(ctx != NULL);
     assert(batch != NULL);

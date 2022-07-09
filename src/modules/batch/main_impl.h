@@ -93,10 +93,11 @@ static void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
     sha->bytes = 64;
 }
 
-secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max_terms) {
+secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max_terms, const unsigned char *aux_rand16) {
     size_t batch_size = sizeof(secp256k1_batch);
     size_t batch_scratch_size = secp256k1_batch_scratch_size(2*max_terms);
     secp256k1_batch* batch = (secp256k1_batch*)checked_malloc(&ctx->error_callback, batch_size);
+    unsigned char null_array[16] = {0};
 
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(max_terms != 0);
@@ -127,6 +128,12 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
         /* set remaining data members */
         secp256k1_scalar_clear(&batch->sc_g);
         secp256k1_batch_sha256_tagged(&batch->sha256);
+        if (aux_rand16 != NULL) {
+            secp256k1_sha256_write(&batch->sha256, aux_rand16, 16);
+        } else {
+            /* use 16 bytes of 0x0000...000, if no fresh randomness provided */
+            secp256k1_sha256_write(&batch->sha256, null_array, 16);
+        }
         batch->len = 0;
         batch->result = 1;
     }

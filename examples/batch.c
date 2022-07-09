@@ -111,6 +111,10 @@ int main(void) {
 
     printf("Adding signatures to the batch object.......");
     for (i = 0; i < N_SIGS; i++) {
+        /* It is recommended to check the validity of the batch before adding a
+         * new input (schnorrsig/tweak check) to it. The `secp256k1_batch_add_` APIs
+         * won't add any new input to invalid batch since the final `secp256k1_batch_verify`
+         * API call will fail even if the new input is valid. */
         if(secp256k1_batch_isvalid(ctx, batch)) {
             ret = secp256k1_batch_add_schnorrsig(ctx, batch, sig[i], msg[i], sizeof(msg[i]), &pk);
         } else {
@@ -134,6 +138,10 @@ int main(void) {
 
     printf("Adding tweak checks to the batch object.....");
     for (i = 0; i < N_CHECKS; i++) {
+        /* It is recommended to check the validity of the batch before adding a
+         * new input (schnorrsig/tweak check) to it. The `secp256k1_batch_add_` APIs
+         * won't add any new input to invalid batch since the final `secp256k1_batch_verify`
+         * API call will fail even if the new input is valid. */
         if(secp256k1_batch_isvalid(ctx, batch)) {
             ret = secp256k1_batch_add_xonlypub_tweak_check(ctx, batch, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i]);
         } else {

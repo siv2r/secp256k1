@@ -89,7 +89,6 @@ int main(void) {
      * input data (schnorrsigs, tweak checks) required for the batch */
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
     secp256k1_batch *batch = secp256k1_batch_create(ctx, N_TERMS);
-    int batch_reset;
 
     assert(ctx != NULL);
     assert(batch != NULL);
@@ -113,7 +112,7 @@ int main(void) {
     printf("Adding signatures to the batch object.......");
     for (i = 0; i < N_SIGS; i++) {
         if(secp256k1_batch_isvalid(ctx, batch)) {
-            ret = secp256k1_batch_add_schnorrsig(ctx, batch, sig[i], msg[i], sizeof(msg[i]), &pk, &batch_reset);
+            ret = secp256k1_batch_add_schnorrsig(ctx, batch, sig[i], msg[i], sizeof(msg[i]), &pk);
         } else {
             printf("INVALID BATCH\n");
             return 1;
@@ -136,7 +135,7 @@ int main(void) {
     printf("Adding tweak checks to the batch object.....");
     for (i = 0; i < N_CHECKS; i++) {
         if(secp256k1_batch_isvalid(ctx, batch)) {
-            ret = secp256k1_batch_add_xonlypub_tweak_check(ctx, batch, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i], &batch_reset);
+            ret = secp256k1_batch_add_xonlypub_tweak_check(ctx, batch, tweaked_pubkey[i], tweaked_pk_parity[i], &pk, tweak[i]);
         } else {
             printf("INVALID BATCH\n");
             return 1;

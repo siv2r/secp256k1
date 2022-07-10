@@ -13,6 +13,9 @@
 
 typedef struct {
     secp256k1_context *ctx;
+#ifdef ENABLE_MODULE_BATCH
+    secp256k1_batch *batch;
+#endif
     int n;
 
     const secp256k1_keypair **keypairs;
@@ -45,6 +48,22 @@ void bench_schnorrsig_verify(void* arg, int iters) {
     }
 }
 
+#ifdef ENABLE_MODULE_BATCH
+void bench_schnorrsig_batch_verify(void* arg, int iters) {
+    bench_schnorrsig_data *data = (bench_schnorrsig_data *)arg;
+    int i;
+
+    for (i = 0; i < iters; i++) {
+        secp256k1_xonly_pubkey pk;
+        CHECK(secp256k1_xonly_pubkey_parse(data->ctx, &pk, data->pk[i]) == 1);
+        CHECK(secp256k1_batch_isvalid(data->ctx, data->batch) == 1);
+        CHECK(secp256k1_batch_add_schnorrsig(data->ctx, data->batch, data->sigs[i], data->msgs[i], MSGLEN, &pk) == 1);
+    }
+
+    CHECK(secp256k1_batch_verify(data->ctx, data->batch) == 1);
+}
+#endif
+
 void run_schnorrsig_bench(int iters, int argc, char** argv) {
     int i;
     bench_schnorrsig_data data;
@@ -55,6 +74,10 @@ void run_schnorrsig_bench(int iters, int argc, char** argv) {
     data.pk = (const unsigned char **)malloc(iters * sizeof(unsigned char *));
     data.msgs = (const unsigned char **)malloc(iters * sizeof(unsigned char *));
     data.sigs = (const unsigned char **)malloc(iters * sizeof(unsigned char *));
+#ifdef ENABLE_MODULE_BATCH
+    data.batch = secp256k1_batch_create(data.ctx, iters, NULL);
+    CHECK(data.batch != NULL);
+#endif
 
     CHECK(MSGLEN >= 4);
     for (i = 0; i < iters; i++) {
@@ -80,10 +103,14 @@ void run_schnorrsig_bench(int iters, int argc, char** argv) {
         CHECK(secp256k1_schnorrsig_sign_custom(data.ctx, sig, msg, MSGLEN, keypair, NULL));
         CHECK(secp256k1_keypair_xonly_pub(data.ctx, &pk, NULL, keypair));
         CHECK(secp256k1_xonly_pubkey_serialize(data.ctx, pk_char, &pk) == 1);
+        /* todo: should batch_add_schnorrsig be here instead?  */
     }
 
     if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "sign") || have_flag(argc, argv, "schnorrsig_sign")) run_benchmark("schnorrsig_sign", bench_schnorrsig_sign, NULL, NULL, (void *) &data, 10, iters);
     if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "verify") || have_flag(argc, argv, "schnorrsig_verify")) run_benchmark("schnorrsig_verify", bench_schnorrsig_verify, NULL, NULL, (void *) &data, 10, iters);
+#ifdef ENABLE_MODULE_BATCH
+    if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "batch_verify") || have_flag(argc, argv, "schnorrsig_batch_verify")) run_benchmark("schnorrsig_batch_verify", bench_schnorrsig_batch_verify, NULL, NULL, (void *) &data, 10, iters);
+#endif
 
     for (i = 0; i < iters; i++) {
         free((void *)data.keypairs[i]);
@@ -96,6 +123,9 @@ void run_schnorrsig_bench(int iters, int argc, char** argv) {
     free(data.msgs);
     free(data.sigs);
 
+#ifdef ENABLE_MODULE_BATCH
+    secp256k1_batch_destroy(data.ctx, data.batch);
+#endif
     secp256k1_context_destroy(data.ctx);
 }
 

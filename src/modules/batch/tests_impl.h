@@ -44,6 +44,7 @@ void test_batch_api(void) {
     unsigned char tweak[N_TWK_CHECKS][32];
     secp256k1_pubkey tmp_pk;
     secp256k1_xonly_pubkey tmp_xonly_pk;
+    unsigned char overflows[32];
     /* context and batch setup */
     secp256k1_context *none = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
     secp256k1_context *sign = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
@@ -75,14 +76,15 @@ void test_batch_api(void) {
     CHECK(secp256k1_keypair_xonly_pub(ctx, &pk, NULL, &keypair) == 1);
     memset(&zero_pk, 0, sizeof(zero_pk));
 
-    /* generate N_SIGS schnorr verify data (msg[32], sig[64]) */
+    /* generate N_SIGS schnorr verify data (msg, sig) */
     for (i = 0; i < N_SIGS; i++) {
         secp256k1_testrand256(msg[i]);
         CHECK(secp256k1_schnorrsig_sign32(ctx, sig[i], msg[i], &keypair, NULL) == 1);
         CHECK(secp256k1_schnorrsig_verify(ctx, sig[i], msg[i], sizeof(msg[i]), &pk));
     }
 
-    /* generate N_TWK_CHECKS tweak check data (tweaked_pk[32], tweaked_pk_parity, tweak[32]) */
+    /* generate N_TWK_CHECKS tweak check data (tweaked_pk, tweaked_pk_parity, tweak) */
+    memset(overflows, 0xff, sizeof(overflows));
     for (i = 0; i < N_TWK_CHECKS; i++) {
         secp256k1_testrand256(tweak[i]);
         CHECK(secp256k1_xonly_pubkey_tweak_add(ctx, &tmp_pk, &pk, tweak[i]));
@@ -116,25 +118,69 @@ void test_batch_api(void) {
     CHECK(batch_sttc == NULL);
     CHECK(ecount == 2);
 
+#ifdef ENABLE_MODULE_SCHNORRSIG
     /* secp256k1_batch_add tests for batch_none */
     ecount = 0;
+    CHECK(secp256k1_batch_isvalid(none, batch_none) == 1);
     CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, NULL, msg[0], sizeof(msg[0]), &pk) == 0);
     CHECK(ecount == 1);
+    CHECK(secp256k1_batch_isvalid(none, batch_none) == 1);
     CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], NULL, sizeof(msg[0]), &pk) == 0);
     CHECK(ecount == 2);
+    CHECK(secp256k1_batch_isvalid(none, batch_none) == 1);
+    /* todo: this batch_add is not extracting point correctly (verify fails)*/
     CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], NULL, 0, &pk) == 1);
     CHECK(ecount == 2);
+    CHECK(secp256k1_batch_isvalid(none, batch_none) == 1);
     CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], msg[0], sizeof(msg[0]), NULL) == 0);
     CHECK(ecount == 3);
+    CHECK(secp256k1_batch_isvalid(none, batch_none) == 1);
     CHECK(secp256k1_batch_add_schnorrsig(none, batch_none, sig[0], msg[0], sizeof(msg[0]), &zero_pk) == 0);
     CHECK(ecount == 4);
+    CHECK(secp256k1_batch_isvalid(none, batch_none) == 1);
+    CHECK(secp256k1_batch_add_schnorrsig(none, NULL, sig[0], msg[0], sizeof(msg[0]), &pk) == 0);
+    CHECK(ecount == 5);
+#endif
 
+#ifdef ENABLE_MODULE_EXTRAKEYS
     /* secp256k1_batch_add_tests for batch_sign */
     ecount = 0;
+    CHECK(secp256k1_batch_isvalid(sign, batch_sign) == 1);
+    CHECK(secp256k1_batch_add_xonlypub_tweak_check(sign, batch_sign, NULL, tweaked_pk_parity[0], &pk, tweak[0]) == 0);
+    CHECK(ecount == 1);
+    CHECK(secp256k1_batch_isvalid(sign, batch_sign) == 1);
+    CHECK(secp256k1_batch_add_xonlypub_tweak_check(sign, batch_sign, tweaked_pk[0], tweaked_pk_parity[0], NULL, tweak[0]) == 0);
+    CHECK(ecount == 2);
+    CHECK(secp256k1_batch_isvalid(sign, batch_sign) == 1);
+    CHECK(secp256k1_batch_add_xonlypub_tweak_check(sign, batch_sign, tweaked_pk[0], tweaked_pk_parity[0], &pk, NULL) == 0);
+    CHECK(ecount == 3);
+    CHECK(secp256k1_batch_isvalid(sign, batch_sign) == 1);
+    CHECK(secp256k1_batch_add_xonlypub_tweak_check(sign, NULL, tweaked_pk[0], tweaked_pk_parity[0], &pk, tweak[0]) == 0);
+    CHECK(ecount == 4);
+    /* overflowing tweak not allowed */
+    CHECK(secp256k1_batch_isvalid(sign, batch_sign) == 1);
+    CHECK(secp256k1_batch_add_xonlypub_tweak_check(sign, batch_sign, tweaked_pk[0], tweaked_pk_parity[0], &pk, overflows) == 0);
+    CHECK(ecount == 4);
+    /* x-coordinate of tweaked pubkey should be less than prime order */
+    CHECK(secp256k1_batch_isvalid(sign, batch_sign) == 1);
+    CHECK(secp256k1_batch_add_xonlypub_tweak_check(sign, batch_sign, overflows, tweaked_pk_parity[0], &pk, tweak[0]) == 0);
+    CHECK(ecount == 4);
+    /* batch_verify should fail for incorrect tweak */
+    CHECK(secp256k1_batch_isvalid(sign, batch_sign) == 1);
+    CHECK(secp256k1_batch_add_xonlypub_tweak_check(sign, batch_sign, tweaked_pk[0], !tweaked_pk_parity[0], &pk, tweak[0]) == 1);
+    CHECK(ecount == 4);
+    CHECK(secp256k1_batch_verify(sign, batch_sign) == 0);
+    CHECK(ecount == 4);
+    /* passing batch_add_* should not accept invalid batch object */
+    CHECK(secp256k1_batch_isvalid(sign, batch_sign) == 0);
+    CHECK(secp256k1_batch_add_xonlypub_tweak_check(sign, batch_sign, tweaked_pk[0], tweaked_pk_parity[0], &pk, tweak[0]) == 0);
+    CHECK(ecount == 4);
+#endif
 
     /* secp256k1_batch_add_tests for batch_vrfy */
     ecount = 0;
 
+#if defined(ENABLE_MODULE_SCHNORRSIG) && defined(ENABLE_MODULE_EXTRAKEYS)
     /* secp256k1_batch_add_tests for batch_both */
     ecount = 0;
     for (i = 0; i < N_SIGS; i++) {
@@ -145,11 +191,10 @@ void test_batch_api(void) {
         CHECK(secp256k1_batch_isvalid(ctx, batch_both));
         CHECK(secp256k1_batch_add_xonlypub_tweak_check(ctx, batch_both, tweaked_pk[i], tweaked_pk_parity[i], &pk, tweak[i]));
     }
+#endif
 
     ecount = 0;
     CHECK(secp256k1_batch_verify(none, batch_none) == 0);
-    CHECK(ecount == 0);
-    CHECK(secp256k1_batch_verify(sign, batch_sign) == 1);
     CHECK(ecount == 0);
     CHECK(secp256k1_batch_verify(vrfy, batch_vrfy) == 1);
     CHECK(ecount == 0);

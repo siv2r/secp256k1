@@ -49,7 +49,7 @@ void bench_schnorrsig_verify(void* arg, int iters) {
 }
 
 #ifdef ENABLE_MODULE_BATCH
-void bench_schnorrsig_batch_verify(void* arg, int iters) {
+void bench_schnorrsigs_batch_verify(void* arg, int iters) {
     bench_schnorrsig_data *data = (bench_schnorrsig_data *)arg;
     int i;
 
@@ -109,7 +109,7 @@ void run_schnorrsig_bench(int iters, int argc, char** argv) {
     if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "sign") || have_flag(argc, argv, "schnorrsig_sign")) run_benchmark("schnorrsig_sign", bench_schnorrsig_sign, NULL, NULL, (void *) &data, 10, iters);
     if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "verify") || have_flag(argc, argv, "schnorrsig_verify")) run_benchmark("schnorrsig_verify", bench_schnorrsig_verify, NULL, NULL, (void *) &data, 10, iters);
 #ifdef ENABLE_MODULE_BATCH
-    if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "batch_verify") || have_flag(argc, argv, "schnorrsig_batch_verify")) run_benchmark("schnorrsig_batch_verify", bench_schnorrsig_batch_verify, NULL, NULL, (void *) &data, 10, iters);
+    if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "batch_verify") || have_flag(argc, argv, "schnorrsigs_batch_verify")) run_benchmark("schnorrsigs_batch_verify", bench_schnorrsigs_batch_verify, NULL, NULL, (void *) &data, 10, iters);
 #endif
 
     for (i = 0; i < iters; i++) {

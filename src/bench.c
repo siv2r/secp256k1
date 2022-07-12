@@ -145,6 +145,10 @@ static void bench_sign_run(void* arg, int iters) {
 # include "modules/recovery/bench_impl.h"
 #endif
 
+#ifdef ENABLE_MODULE_EXTRAKEYS
+# include "modules/extrakeys/bench_impl.h"
+#endif
+
 #ifdef ENABLE_MODULE_SCHNORRSIG
 # include "modules/schnorrsig/bench_impl.h"
 #endif
@@ -161,7 +165,7 @@ int main(int argc, char** argv) {
 
     /* Check for invalid user arguments */
     char* valid_args[] = {"ecdsa", "verify", "ecdsa_verify", "sign", "ecdsa_sign", "ecdh", "recover",
-                         "ecdsa_recover", "schnorrsig", "schnorrsig_verify", "schnorrsig_sign", "batch_verify", "schnorrsigs_batch_verify"};
+                         "ecdsa_recover", "schnorrsig", "schnorrsig_verify", "schnorrsig_sign", "batch_verify", "schnorrsigs_batch_verify", "extrakeys", "tweak_add_check", "tweak_checks_batch_verify"};
     size_t valid_args_size = sizeof(valid_args)/sizeof(valid_args[0]);
     int invalid_args = have_invalid_args(argc, argv, valid_args, valid_args_size);
 
@@ -180,7 +184,7 @@ int main(int argc, char** argv) {
 
 /* Check if the user tries to benchmark optional module without building it */
 #ifndef ENABLE_MODULE_ECDH
-    if (have_flag(argc, argv, "ecdh")) { 
+    if (have_flag(argc, argv, "ecdh")) {
         fprintf(stderr, "./bench: ECDH module not enabled.\n");
         fprintf(stderr, "Use ./configure --enable-module-ecdh.\n\n");
         return 1;
@@ -188,7 +192,7 @@ int main(int argc, char** argv) {
 #endif
 
 #ifndef ENABLE_MODULE_RECOVERY
-    if (have_flag(argc, argv, "recover") || have_flag(argc, argv, "ecdsa_recover")) { 
+    if (have_flag(argc, argv, "recover") || have_flag(argc, argv, "ecdsa_recover")) {
         fprintf(stderr, "./bench: Public key recovery module not enabled.\n");
         fprintf(stderr, "Use ./configure --enable-module-recovery.\n\n");
         return 1;
@@ -196,7 +200,7 @@ int main(int argc, char** argv) {
 #endif
 
 #ifndef ENABLE_MODULE_SCHNORRSIG
-    if (have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "schnorrsig_sign") || have_flag(argc, argv, "schnorrsig_verify")) { 
+    if (have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "schnorrsig_sign") || have_flag(argc, argv, "schnorrsig_verify")) {
         fprintf(stderr, "./bench: Schnorr signatures module not enabled.\n");
         fprintf(stderr, "Use ./configure --enable-module-schnorrsig.\n\n");
         return 1;
@@ -239,6 +243,11 @@ int main(int argc, char** argv) {
 #ifdef ENABLE_MODULE_RECOVERY
     /* ECDSA recovery benchmarks */
     run_recovery_bench(iters, argc, argv);
+#endif
+
+#ifdef ENABLE_MODULE_EXTRAKEYS
+    /* Schnorr signature benchmarks */
+    run_extrakeys_bench(iters, argc, argv);
 #endif
 
 #ifdef ENABLE_MODULE_SCHNORRSIG

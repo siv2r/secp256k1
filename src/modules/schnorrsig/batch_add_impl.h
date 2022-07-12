@@ -11,12 +11,9 @@
 
 static void secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const unsigned char *compressed_pk33) {
     secp256k1_sha256 sha256_cpy;
-    unsigned char batch_add_type[1] = "1";
-    /* Assume two batch objects batch1 and batch2. If we call
-     * batch_add_tweaks on batch1 and batch_add_schnorrsig on batch2.
-     * In this case same randomizer will be created if the bytes added to
-     * batch1->sha and batch2->sha are same. This tag prevents such cases. */
-    secp256k1_sha256_write(sha256, batch_add_type, sizeof(batch_add_type));
+    unsigned char batch_add_type = (unsigned char) schnorrsig;
+
+    secp256k1_sha256_write(sha256, &batch_add_type, sizeof(batch_add_type));
     /* add schnorrsig data to sha256 object */
     secp256k1_sha256_write(sha256, sig64, 64);
     secp256k1_sha256_write(sha256, msg, msglen);

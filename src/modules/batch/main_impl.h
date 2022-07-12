@@ -11,6 +11,13 @@
 #include "src/hash.h"
 #include "src/scratch.h"
 
+/* Assume two batch objects batch1 and batch2. If we call
+ * batch_add_tweaks on batch1 and batch_add_schnorrsig on batch2.
+ * In this case same randomizer will be created if the bytes added to
+ * batch1->sha and batch2->sha are same. Including this tag during
+ * randomizer generation prevents such mishaps. */
+enum batch_add_type {schnorrsig = 1, tweak_check = 2};
+
 /** Opaque data structure that holds information required for the batch verification.
  *
  *  Members:

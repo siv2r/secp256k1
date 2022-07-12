@@ -11,13 +11,9 @@
 
 static void secp256k1_batch_xonlypub_tweak_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *tweaked_pubkey32, const unsigned char *tweaked_pk_parity, const unsigned char *internal_pk33, const unsigned char *tweak32) {
     secp256k1_sha256 sha256_cpy;
-    /* Assume two batch objects batch1 and batch2. If we call
-     * batch_add_tweaks on batch1 and batch_add_schnorrsig on batch2.
-     * In this case same randomizer will be created if the bytes added to
-     * batch1->sha and batch2->sha are same. This tag prevents such cases. */
-    unsigned char batch_add_type[1] = "2";
+    unsigned char batch_add_type = (unsigned char) tweak_check;
 
-    secp256k1_sha256_write(sha256, batch_add_type, sizeof(batch_add_type));
+    secp256k1_sha256_write(sha256, &batch_add_type, sizeof(batch_add_type));
     /* add tweaked pubkey check data to sha object */
     secp256k1_sha256_write(sha256, tweaked_pubkey32, 32);
     secp256k1_sha256_write(sha256, tweaked_pk_parity, 1);

@@ -34,23 +34,39 @@ void help(int default_iters) {
     printf("Usage: ./bench [args]\n");
     printf("By default, all benchmarks will be run.\n");
     printf("args:\n");
-    printf("    help              : display this help and exit\n");
-    printf("    ecdsa             : all ECDSA algorithms--sign, verify, recovery (if enabled)\n");
-    printf("    ecdsa_sign        : ECDSA siging algorithm\n");
-    printf("    ecdsa_verify      : ECDSA verification algorithm\n");
+    printf("   help                     : display this help and exit\n");
+    printf("   ecdsa                    : all ECDSA algorithms--sign, verify, recovery (if enabled)\n");
+    printf("   ecdsa_sign               : ECDSA siging algorithm\n");
+    printf("   ecdsa_verify             : ECDSA verification algorithm\n");
 
 #ifdef ENABLE_MODULE_RECOVERY
-    printf("    ecdsa_recover     : ECDSA public key recovery algorithm\n");
+    printf("   ecdsa_recover            : ECDSA public key recovery algorithm\n");
 #endif
 
 #ifdef ENABLE_MODULE_ECDH
-    printf("    ecdh              : ECDH key exchange algorithm\n");
+    printf("   ecdh                     : ECDH key exchange algorithm\n");
 #endif
 
 #ifdef ENABLE_MODULE_SCHNORRSIG
-    printf("    schnorrsig        : all Schnorr signature algorithms (sign, verify)\n");
-    printf("    schnorrsig_sign   : Schnorr sigining algorithm\n");
-    printf("    schnorrsig_verify : Schnorr verification algorithm\n");
+    printf("   schnorrsig               : all Schnorr signature algorithms (sign, verify)\n");
+    printf("   schnorrsig_sign          : Schnorr sigining algorithm\n");
+    printf("   schnorrsig_verify        : Schnorr verification algorithm\n");
+# ifdef ENABLE_MODULE_BATCH
+    printf("   schnorrsigs_batch_verify : Batch verification of Schnorr signatures\n");
+# endif
+#endif
+
+#ifdef ENABLE_MODULE_EXTRAKEYS
+    printf("   tweaked_pubkey_verify    : Tweaked pubkey verification algorithm\n");
+# ifdef ENABLE_MODULE_BATCH
+    printf("   tweakedpubs_batch_verify : Batch verification of tweaked pubkeys\n");
+# endif
+#endif
+
+#ifdef ENABLE_MODULE_BATCH
+# if defined(ENABLE_MODULE_SCHNORRSIG) && defined(ENABLE_MODULE_EXTRAKEYS)
+    printf("   mixed_batch_verify       : Batch verification of both schnorrsigs and tweaked pubs\n");
+# endif
 #endif
 
     printf("\n");
@@ -145,7 +161,7 @@ int main(int argc, char** argv) {
 
     /* Check for invalid user arguments */
     char* valid_args[] = {"ecdsa", "verify", "ecdsa_verify", "sign", "ecdsa_sign", "ecdh", "recover",
-                         "ecdsa_recover", "schnorrsig", "schnorrsig_verify", "schnorrsig_sign"};
+                         "ecdsa_recover", "schnorrsig", "schnorrsig_verify", "schnorrsig_sign", "batch_verify", "schnorrsigs_batch_verify"};
     size_t valid_args_size = sizeof(valid_args)/sizeof(valid_args[0]);
     int invalid_args = have_invalid_args(argc, argv, valid_args, valid_args_size);
 

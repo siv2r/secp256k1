@@ -60,7 +60,7 @@ void bench_schnorrsigs_batch_verify(void* arg, int iters) {
     for (i = 0; i < iters; i++) {
         secp256k1_xonly_pubkey pk;
         CHECK(secp256k1_xonly_pubkey_parse(data->ctx, &pk, data->pk[i]) == 1);
-        CHECK(secp256k1_batch_isvalid(data->ctx, data->batch) == 1);
+        CHECK(secp256k1_batch_usable(data->ctx, data->batch) == 1);
         CHECK(secp256k1_batch_add_schnorrsig(data->ctx, data->batch, data->sigs[i], data->msgs[i], MSGLEN, &pk) == 1);
     }
 

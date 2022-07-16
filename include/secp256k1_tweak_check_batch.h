@@ -21,8 +21,8 @@ extern "C" {
  *  tweak_add to a secp256k1_xonly_pubkey.
  *
  *  Returns: 1: successfully added the tweak check data to the batch
- *           0: unparseable tweak check data or invalid batch (according to
- *              secp256k1_batch_isvalid).
+ *           0: unparseable tweak check data or unusable batch (according to
+ *              secp256k1_batch_usable).
  *  Args:            ctx: pointer to a context object initialized for verification.
  *                 batch: a secp256k1 batch object created using `secp256k1_batch_create`.
  *  In: tweaked_pubkey32: pointer to a serialized xonly_pubkey.

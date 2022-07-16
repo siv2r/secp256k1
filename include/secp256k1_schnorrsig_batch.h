@@ -17,8 +17,8 @@ extern "C" {
  *  defined in the Batch module (see include/secp256k1_batch.h).
  *
  *  Returns: 1: successfully added the verify data to the batch
- *           0: unparseable signature or invalid batch (according to
- *              secp256k1_batch_isvalid).
+ *           0: unparseable signature or unusable batch (according to
+ *              secp256k1_batch_usable).
  *  Args:    ctx: a secp256k1 context object (can be initialized for none).
  *         batch: a secp256k1 batch object created using `secp256k1_batch_create`.
  *  In:    sig64: pointer to the 64-byte signature to verify.

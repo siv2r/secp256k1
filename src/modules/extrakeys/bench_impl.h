@@ -41,7 +41,7 @@ void bench_tweak_checks_batch_verify(void* arg, int iters) {
     for (i = 0; i < iters; i++) {
         secp256k1_xonly_pubkey pk;
         CHECK(secp256k1_xonly_pubkey_parse(data->ctx, &pk, data->pks[i]) == 1);
-        CHECK(secp256k1_batch_isvalid(data->ctx, data->batch) == 1);
+        CHECK(secp256k1_batch_usable(data->ctx, data->batch) == 1);
         CHECK(secp256k1_batch_add_xonlypub_tweak_check(data->ctx, data->batch, data->tweaked_pks[i], *data->tweaked_pk_parities[i], &pk, data->tweaks[i]) == 1);
     }
 

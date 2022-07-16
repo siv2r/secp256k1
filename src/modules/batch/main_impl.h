@@ -160,7 +160,7 @@ void secp256k1_batch_destroy(const secp256k1_context *ctx, secp256k1_batch *batc
     }
 }
 
-int secp256k1_batch_isvalid(const secp256k1_context *ctx, const secp256k1_batch *batch) {
+int secp256k1_batch_usable(const secp256k1_context *ctx, const secp256k1_batch *batch) {
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(batch != NULL);
 

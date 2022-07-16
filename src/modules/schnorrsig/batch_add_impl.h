@@ -2,6 +2,7 @@
 #define SECP256K1_MODULE_SCHNORRSIG_BATCH_ADD_IMPL_H
 
 #include "include/secp256k1_schnorrsig.h"
+#include "include/secp256k1_schnorrsig_batch.h"
 #include "src/hash.h"
 #include "src/modules/batch/main_impl.h"
 

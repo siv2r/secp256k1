@@ -4,8 +4,8 @@
 
 #include <secp256k1.h>
 #include <secp256k1_batch.h>
-#include <secp256k1_schnorrsig.h>
-#include <secp256k1_extrakeys.h>
+#include <secp256k1_schnorrsig_batch.h>
+#include <secp256k1_tweak_check_batch.h>
 
 #include "random.h"
 

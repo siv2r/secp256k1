@@ -8,6 +8,10 @@
 #define SECP256K1_MODULE_SCHNORRSIG_BENCH_H
 
 #include "../../../include/secp256k1_schnorrsig.h"
+#ifdef ENABLE_MODULE_BATCH
+# include "../../../include/secp256k1_batch.h"
+# include "../../../include/secp256k1_schnorrsig_batch.h"
+#endif
 
 #define MSGLEN 32
 

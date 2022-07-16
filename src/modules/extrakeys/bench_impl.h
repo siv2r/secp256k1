@@ -3,6 +3,10 @@
 #define SECP256K1_MODULE_EXTRAKEYS_BENCH_H
 
 #include "../../../include/secp256k1_extrakeys.h"
+#ifdef ENABLE_MODULE_BATCH
+# include "../../../include/secp256k1_batch.h"
+# include "../../../include/secp256k1_tweak_check_batch.h"
+#endif
 
 typedef struct {
     secp256k1_context *ctx;

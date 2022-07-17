@@ -387,6 +387,7 @@ static int secp256k1_strauss_scratch_alloc(const secp256k1_callback* error_callb
  */
 static int secp256k1_ecmult_strauss_batch_prealloc_scratch(const secp256k1_callback* error_callback, secp256k1_scratch *scratch, secp256k1_gej *r, secp256k1_scalar *scratch_sclrs, secp256k1_gej *scratch_pts, const secp256k1_scalar *inp_g_sc, size_t n_points) {
     struct secp256k1_strauss_state state;
+    const size_t scratch_checkpoint = secp256k1_scratch_checkpoint(error_callback, scratch);
 
     secp256k1_gej_set_infinity(r);
     if (inp_g_sc == NULL && n_points == 0) {
@@ -398,6 +399,7 @@ static int secp256k1_ecmult_strauss_batch_prealloc_scratch(const secp256k1_callb
     }
 
     secp256k1_ecmult_strauss_wnaf(&state, r, n_points, scratch_pts, scratch_sclrs, inp_g_sc);
+    secp256k1_scratch_apply_checkpoint(error_callback, scratch, scratch_checkpoint);
     return 1;
 }
 

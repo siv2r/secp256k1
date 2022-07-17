@@ -104,7 +104,7 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
     size_t batch_size = sizeof(secp256k1_batch);
     size_t batch_scratch_size = secp256k1_batch_scratch_size(2*max_terms);
     secp256k1_batch* batch = (secp256k1_batch*)checked_malloc(&ctx->error_callback, batch_size);
-    unsigned char null_array[16] = {0};
+    unsigned char zeros[16] = {0};
 
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(max_terms != 0);
@@ -139,7 +139,7 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
             secp256k1_sha256_write(&batch->sha256, aux_rand16, 16);
         } else {
             /* use 16 bytes of 0x0000...000, if no fresh randomness provided */
-            secp256k1_sha256_write(&batch->sha256, null_array, 16);
+            secp256k1_sha256_write(&batch->sha256, zeros, 16);
         }
         batch->len = 0;
         batch->result = 1;
@@ -179,7 +179,6 @@ int secp256k1_batch_usable(const secp256k1_context *ctx, const secp256k1_batch *
  */
 int secp256k1_batch_verify(const secp256k1_context *ctx, secp256k1_batch *batch) {
     secp256k1_gej resj;
-    int mid_res;
 
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(batch != NULL);
@@ -189,10 +188,8 @@ int secp256k1_batch_verify(const secp256k1_context *ctx, secp256k1_batch *batch)
     }
 
     if (batch->len > 0) {
-        if(batch->scalars != NULL && batch->points != NULL) {
-            mid_res = secp256k1_ecmult_strauss_batch_prealloc_scratch(&ctx->error_callback, batch->data, &resj, batch->scalars, batch->points, &batch->sc_g, batch->len) && secp256k1_gej_is_infinity(&resj);
-            batch->result = batch->result && mid_res;
-        }
+        int mid_res = secp256k1_ecmult_strauss_batch_prealloc_scratch(&ctx->error_callback, batch->data, &resj, batch->scalars, batch->points, &batch->sc_g, batch->len) && secp256k1_gej_is_infinity(&resj);
+        batch->result = batch->result && mid_res;
     }
 
     return batch->result;

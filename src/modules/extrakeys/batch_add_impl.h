@@ -24,6 +24,8 @@ static void secp256k1_batch_xonlypub_tweak_randomizer_gen(unsigned char *randomi
     /* generate randomizer */
     sha256_cpy = *sha256;
     secp256k1_sha256_finalize(&sha256_cpy, randomizer32);
+    /* 16 byte randomizer is sufficient */
+    memset(randomizer32, 0, 16);
 }
 
 static int secp256k1_batch_xonlypub_tweak_randomizer_set(const secp256k1_context* ctx, secp256k1_batch *batch, secp256k1_scalar *r, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
@@ -32,6 +34,8 @@ static int secp256k1_batch_xonlypub_tweak_randomizer_set(const secp256k1_context
     size_t internal_buflen = sizeof(internal_buf);
     unsigned char parity = (unsigned char) tweaked_pk_parity;
     int overflow;
+    /* t = 2^127 */
+    secp256k1_scalar t = SECP256K1_SCALAR_CONST(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0x00000000);
 
     /* We use compressed serialization here. If we would use
     * xonly_pubkey serialization and a user would wrongly memcpy
@@ -43,6 +47,9 @@ static int secp256k1_batch_xonlypub_tweak_randomizer_set(const secp256k1_context
 
     secp256k1_batch_xonlypub_tweak_randomizer_gen(randomizer, &batch->sha256, tweaked_pubkey32, &parity, internal_buf, tweak32);
     secp256k1_scalar_set_b32(r, randomizer, &overflow);
+    /* Shift scalar to range [-2^127, 2^127-1] */
+    secp256k1_scalar_negate(&t, &t);
+    secp256k1_scalar_add(r, r, &t);
     VERIFY_CHECK(overflow == 0);
 
     return 1;

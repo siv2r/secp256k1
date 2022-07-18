@@ -23,6 +23,8 @@ static void secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer3
     /* generate randomizer */
     sha256_cpy = *sha256;
     secp256k1_sha256_finalize(&sha256_cpy, randomizer32);
+    /* 16 byte randomizer is sufficient */
+    memset(randomizer32, 0, 16);
 }
 
 static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ctx, secp256k1_batch *batch, secp256k1_scalar *r, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
@@ -30,6 +32,8 @@ static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ct
     unsigned char buf[33];
     size_t buflen = sizeof(buf);
     int overflow;
+    /* t = 2^127 */
+    secp256k1_scalar t = SECP256K1_SCALAR_CONST(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0x00000000);
 
     /* We use compressed serialization here. If we would use
     * xonly_pubkey serialization and a user would wrongly memcpy
@@ -41,6 +45,9 @@ static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ct
 
     secp256k1_batch_schnorrsig_randomizer_gen(randomizer, &batch->sha256, sig64, msg, msglen, buf);
     secp256k1_scalar_set_b32(r, randomizer, &overflow);
+    /* Shift scalar to range [-2^127, 2^127-1] */
+    secp256k1_scalar_negate(&t, &t);
+    secp256k1_scalar_add(r, r, &t);
     VERIFY_CHECK(overflow == 0);
 
     return 1;

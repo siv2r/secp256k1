@@ -18,6 +18,10 @@
  * randomizer generation prevents such mishaps. */
 enum batch_add_type {schnorrsig = 1, tweak_check = 2};
 
+/* Maximum number of terms (schnorrsig or tweak checks) for
+ * which the strauss algorithm remains efficient */
+#define STRAUSS_MAX_TERMS_PER_BATCH 80
+
 /** Opaque data structure that holds information required for the batch verification.
  *
  *  Members:
@@ -102,8 +106,8 @@ static void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
 
 secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max_terms, const unsigned char *aux_rand16) {
     size_t batch_size = sizeof(secp256k1_batch);
-    size_t batch_scratch_size = secp256k1_batch_scratch_size(2*max_terms);
     secp256k1_batch* batch = (secp256k1_batch*)checked_malloc(&ctx->error_callback, batch_size);
+    size_t batch_scratch_size;
     unsigned char zeros[16] = {0};
 
     VERIFY_CHECK(ctx != NULL);
@@ -115,6 +119,12 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
     /* Check that max_terms is less than 2^31 to ensure the same behavior of this function on 32-bit
      * and 64-bit platforms. */
     ARG_CHECK(max_terms < ((uint32_t)1 << 31));
+
+    /* scratch space size in a batch */
+    if (max_terms > STRAUSS_MAX_TERMS_PER_BATCH) {
+        max_terms = STRAUSS_MAX_TERMS_PER_BATCH;
+    }
+    batch_scratch_size = secp256k1_batch_scratch_size(2*max_terms);
 
     if (batch != NULL) {
         /* create scratch space inside batch object, if that fails return NULL*/

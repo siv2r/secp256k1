@@ -164,10 +164,10 @@ int main(int argc, char** argv) {
     int iters = get_iters(default_iters);
 
     /* Check for invalid user arguments */
-    char* valid_args[] = {"ecdsa", "verify", "ecdsa_verify", "sign", "ecdsa_sign", "ecdh", "recover",
+    /* char* valid_args[] = {"ecdsa", "verify", "ecdsa_verify", "sign", "ecdsa_sign", "ecdh", "recover",
                          "ecdsa_recover", "schnorrsig", "schnorrsig_verify", "schnorrsig_sign", "batch_verify", "schnorrsigs_batch_verify", "extrakeys", "tweak_add_check", "tweak_checks_batch_verify"};
-    size_t valid_args_size = sizeof(valid_args)/sizeof(valid_args[0]);
-    int invalid_args = have_invalid_args(argc, argv, valid_args, valid_args_size);
+    size_t valid_args_size = sizeof(valid_args)/sizeof(valid_args[0]); */
+    /* int invalid_args = have_invalid_args(argc, argv, valid_args, valid_args_size); */
 
     if (argc > 1) {
         if (have_flag(argc, argv, "-h")
@@ -175,11 +175,12 @@ int main(int argc, char** argv) {
            || have_flag(argc, argv, "help")) {
             help(default_iters);
             return 0;
-        } else if (invalid_args) {
+        }
+/*         else if (invalid_args) {
             fprintf(stderr, "./bench: unrecognized argument.\n\n");
             help(default_iters);
             return 1;
-        }
+        } */
     }
 
 /* Check if the user tries to benchmark optional module without building it */

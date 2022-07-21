@@ -97,7 +97,7 @@ int main(void) {
         return 1;
     }
 
-    batch = secp256k1_batch_create(ctx, N_TERMS, auxiliary_rand);
+    batch = secp256k1_batch_create(ctx, N_TERMS, 80, auxiliary_rand);
 
     assert(ctx != NULL);
     assert(batch != NULL);

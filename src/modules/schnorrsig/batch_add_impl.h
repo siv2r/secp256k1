@@ -109,7 +109,6 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
      * save the result. Then, clear the batch to extend its capacity */
     if (batch->capacity - batch->len < BATCH_SCHNORRSIG_SCRATCH_OBJS) {
         secp256k1_batch_verify(ctx, batch);
-        secp256k1_batch_scratch_clear(batch);
     }
 
     i = batch->len;

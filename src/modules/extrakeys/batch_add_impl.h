@@ -112,7 +112,6 @@ int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp2
      * save the result. Then, clear the batch to extend its capacity */
     if (batch->capacity - batch->len < BATCH_TWEAK_CHECK_SCRATCH_OBJS) {
         secp256k1_batch_verify(ctx, batch);
-        secp256k1_batch_scratch_clear(batch);
     }
 
     i = batch->len;

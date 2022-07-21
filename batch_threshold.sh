@@ -10,4 +10,12 @@
 
 # replace `schnorrsig_verify` by `tweak_add_check` for batch_verification
 # of tweaked pubkey checks
-./bench $1 $2 schnorrsig_verify | sed '2d;s/ \{1,\}//g' > batch_threshold.csv
+# Note: do not change the order of $1 and $2
+./bench $1 $2 schnorrsig_verify | sed '2d;s/ \{1,\}//g' > batch_threshold.csv &
+
+PID=$!
+while kill -0 "$PID" >/dev/null 2>&1; do
+    echo "Generating CSV file..."
+    sleep 60
+done
+echo "CSV file generation complete!!"

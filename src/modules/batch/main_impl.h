@@ -109,6 +109,10 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
     secp256k1_batch* batch = (secp256k1_batch*)checked_malloc(&ctx->error_callback, batch_size);
     size_t batch_scratch_size;
     unsigned char zeros[16] = {0};
+    /* max limit on scratch space size in a batch */
+    if (max_terms > STRAUSS_MAX_TERMS_PER_BATCH) {
+        max_terms = STRAUSS_MAX_TERMS_PER_BATCH;
+    }
 
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(max_terms != 0);
@@ -120,12 +124,7 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
      * and 64-bit platforms. */
     ARG_CHECK(max_terms < ((uint32_t)1 << 31));
 
-    /* scratch space size in a batch */
-    if (max_terms > STRAUSS_MAX_TERMS_PER_BATCH) {
-        max_terms = STRAUSS_MAX_TERMS_PER_BATCH;
-    }
     batch_scratch_size = secp256k1_batch_scratch_size(2*max_terms);
-
     if (batch != NULL) {
         /* create scratch space inside batch object, if that fails return NULL*/
         batch->data = secp256k1_scratch_create(&ctx->error_callback, batch_scratch_size);

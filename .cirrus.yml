@@ -38,6 +38,8 @@ cat_logs_snippet: &CAT_LOGS
     cat_bench_log_script:
       - cat bench.log || true
   on_failure:
+    cat_test_suite_log_script:
+      - cat test-suite.log || true
     cat_config_log_script:
       - cat config.log || true
     cat_test_env_script:

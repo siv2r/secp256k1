@@ -56,6 +56,7 @@ void test_batch_api(void) {
     secp256k1_batch *batch_vrfy;
     secp256k1_batch *batch_both;
     secp256k1_batch *batch_sttc;
+    unsigned char aux_rand16[32];
     int ecount;
     size_t i;
 
@@ -75,6 +76,9 @@ void test_batch_api(void) {
     CHECK(secp256k1_keypair_create(ctx, &keypair, sk) == 1);
     CHECK(secp256k1_keypair_xonly_pub(ctx, &pk, NULL, &keypair) == 1);
     memset(&zero_pk, 0, sizeof(zero_pk));
+    /* 16 byte auxiliary randomness */
+    secp256k1_testrand256(aux_rand16);
+    memset(&aux_rand16[16], 0, 16);
 
     /* generate N_SIGS schnorr verify data (msg, sig) */
     for (i = 0; i < N_SIGS; i++) {
@@ -95,15 +99,14 @@ void test_batch_api(void) {
 
 
     /** main test body **/
-    /* todo: need to add tests for 1/4th, 3/4th of MAX_TERMS size? */
     ecount = 0;
-    batch_none = secp256k1_batch_create(none, 1, NULL);
+    batch_none = secp256k1_batch_create(none, 1, aux_rand16);
     CHECK(batch_none != NULL);
     CHECK(ecount == 0);
     batch_sign = secp256k1_batch_create(sign, MAX_TERMS/2, NULL);
     CHECK(batch_sign != NULL);
     CHECK(ecount == 0);
-    batch_vrfy = secp256k1_batch_create(vrfy, MAX_TERMS-1, NULL);
+    batch_vrfy = secp256k1_batch_create(vrfy, MAX_TERMS-1, aux_rand16);
     CHECK(batch_vrfy != NULL);
     CHECK(ecount == 0);
     batch_both = secp256k1_batch_create(both, MAX_TERMS, NULL);

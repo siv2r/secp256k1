@@ -49,8 +49,8 @@ void run_batch_xonlypub_tweak_randomizer_gen_tests(void) {
         for (j = 0; j < count; j++) {
             batch_xonlypub_tweak_randomizer_gen_bitflip(&sha, args, 0, 32);
             batch_xonlypub_tweak_randomizer_gen_bitflip(&sha, args, 1, 1);
-            batch_xonlypub_tweak_randomizer_gen_bitflip(&sha, args, 2, 32);
-            batch_xonlypub_tweak_randomizer_gen_bitflip(&sha, args, 3, 33);
+            batch_xonlypub_tweak_randomizer_gen_bitflip(&sha, args, 2, 33);
+            batch_xonlypub_tweak_randomizer_gen_bitflip(&sha, args, 3, 32);
         }
 
         /* write i-th tweak check data to the sha object

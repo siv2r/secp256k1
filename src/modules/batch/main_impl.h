@@ -105,8 +105,8 @@ static void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
 }
 
 secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max_terms, const unsigned char *aux_rand16) {
-    size_t batch_size = sizeof(secp256k1_batch);
-    secp256k1_batch* batch = (secp256k1_batch*)checked_malloc(&ctx->error_callback, batch_size);
+    size_t batch_size;
+    secp256k1_batch* batch;
     size_t batch_scratch_size;
     unsigned char zeros[16] = {0};
     /* max limit on scratch space size in a batch */
@@ -124,6 +124,8 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
      * and 64-bit platforms. */
     ARG_CHECK(max_terms < ((uint32_t)1 << 31));
 
+    batch_size = sizeof(secp256k1_batch);
+    batch = (secp256k1_batch *)checked_malloc(&ctx->error_callback, batch_size);
     batch_scratch_size = secp256k1_batch_scratch_size(2*max_terms);
     if (batch != NULL) {
         /* create scratch space inside batch object, if that fails return NULL*/

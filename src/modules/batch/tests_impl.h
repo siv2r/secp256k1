@@ -224,7 +224,6 @@ void test_batch_api(void) {
 
 
 void run_batch_tests(void) {
-    /* test_batch_api(); */
     test_batch_sha256_tagged();
 }
 

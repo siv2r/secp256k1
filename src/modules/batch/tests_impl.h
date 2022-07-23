@@ -113,10 +113,6 @@ void test_batch_api(void) {
     batch_sttc = secp256k1_batch_create(sttc, 0, NULL);
     CHECK(batch_sttc == NULL);
     CHECK(ecount == 1);
-    /* ARG_CHECK(max_terms <= SIZE_MAX/2) in `batch_create` should fail*/
-    batch_sttc = secp256k1_batch_create(sttc, SIZE_MAX - 1, NULL);
-    CHECK(batch_sttc == NULL);
-    CHECK(ecount == 2);
 
 #ifdef ENABLE_MODULE_SCHNORRSIG
     /* secp256k1_batch_add tests for batch_none */

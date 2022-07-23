@@ -45,12 +45,17 @@ static int secp256k1_batch_xonlypub_tweak_randomizer_set(const secp256k1_context
         return 0;
     }
 
-    secp256k1_batch_xonlypub_tweak_randomizer_gen(randomizer, &batch->sha256, tweaked_pubkey32, &parity, internal_buf, tweak32);
-    secp256k1_scalar_set_b32(r, randomizer, &overflow);
-    /* Shift scalar to range [-2^127, 2^127-1] */
-    secp256k1_scalar_negate(&t, &t);
-    secp256k1_scalar_add(r, r, &t);
-    VERIFY_CHECK(overflow == 0);
+    if (batch->len == 1) {
+        /* randomizer = 1 for the first term */
+        *r = secp256k1_scalar_one;
+    } else {
+        secp256k1_batch_xonlypub_tweak_randomizer_gen(randomizer, &batch->sha256, tweaked_pubkey32, &parity, internal_buf, tweak32);
+        secp256k1_scalar_set_b32(r, randomizer, &overflow);
+        /* Shift scalar to range [-2^127, 2^127-1] */
+        secp256k1_scalar_negate(&t, &t);
+        secp256k1_scalar_add(r, r, &t);
+        VERIFY_CHECK(overflow == 0);
+    }
 
     return 1;
 }

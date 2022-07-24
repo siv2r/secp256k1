@@ -43,17 +43,12 @@ static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ct
         return 0;
     }
 
-    if (batch->len == 0) {
-        /* randomizer = 1 for the first term */
-        *r = secp256k1_scalar_one;
-    } else {
-        secp256k1_batch_schnorrsig_randomizer_gen(randomizer, &batch->sha256, sig64, msg, msglen, buf);
-        secp256k1_scalar_set_b32(r, randomizer, &overflow);
-        /* Shift scalar to range [-2^127, 2^127-1] */
-        secp256k1_scalar_negate(&t, &t);
-        secp256k1_scalar_add(r, r, &t);
-        VERIFY_CHECK(overflow == 0);
-    }
+    secp256k1_batch_schnorrsig_randomizer_gen(randomizer, &batch->sha256, sig64, msg, msglen, buf);
+    secp256k1_scalar_set_b32(r, randomizer, &overflow);
+    /* Shift scalar to range [-2^127, 2^127-1] */
+    secp256k1_scalar_negate(&t, &t);
+    secp256k1_scalar_add(r, r, &t);
+    VERIFY_CHECK(overflow == 0);
 
     return 1;
 }
@@ -133,8 +128,11 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
     secp256k1_fe_get_b32(buf, &pk.x);
     secp256k1_schnorrsig_challenge(&e, &sig64[0], msg, msglen, buf);
 
-    /* Compute ai */
-    if (!secp256k1_batch_schnorrsig_randomizer_set(ctx, batch, &ai, sig64, msg, msglen, pubkey)) {
+    /* Compute ai (randomizer) */
+    if (batch->len == 0) {
+        /* set randomizer as 1 for the first term in batch */
+        ai = secp256k1_scalar_one;
+    } else if (!secp256k1_batch_schnorrsig_randomizer_set(ctx, batch, &ai, sig64, msg, msglen, pubkey)) {
         return 0;
     }
 

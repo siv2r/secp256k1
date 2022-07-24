@@ -1,7 +1,9 @@
 #ifndef SECP256K1_MODULE_SCHNORRSIG_BATCH_ADD_TESTS_IMPL_H
 #define SECP256K1_MODULE_SCHNORRSIG_BATCH_ADD_TESTS_IMPL_H
 
-#include "include/secp256k1_schnorrsig.h"
+#include "../../../include/secp256k1_schnorrsig.h"
+#include "../../../include/secp256k1_batch.h"
+#include "../../../include/secp256k1_schnorrsig_batch.h"
 
 /* Checks that a bit flip in the n_flip-th argument (that has n_bytes many
  * bytes) changes the hash function */
@@ -78,8 +80,97 @@ void run_batch_schnorrsig_randomizer_gen_tests(void) {
 
 }
 
+void test_batch_add_schnorrsig_api(void) {
+    unsigned char sk[32];
+    secp256k1_keypair keypair;
+    secp256k1_xonly_pubkey pk;
+    secp256k1_xonly_pubkey zero_pk;
+    unsigned char msg[32];
+    unsigned char sig[64];
+    unsigned char nullmsg_sig[64];
+
+    /** setup **/
+    secp256k1_context *none = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
+    secp256k1_context *sign = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
+    secp256k1_context *vrfy = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
+    secp256k1_batch *batch1 = secp256k1_batch_create(none, 1, NULL);
+    /* batch2 is used when batch_add_schnorrsig is expected to fail */
+    secp256k1_batch *batch2 = secp256k1_batch_create(none, 1, NULL);
+    int ecount;
+
+    secp256k1_context_set_error_callback(none, counting_illegal_callback_fn, &ecount);
+    secp256k1_context_set_error_callback(sign, counting_illegal_callback_fn, &ecount);
+    secp256k1_context_set_error_callback(vrfy, counting_illegal_callback_fn, &ecount);
+    secp256k1_context_set_illegal_callback(none, counting_illegal_callback_fn, &ecount);
+    secp256k1_context_set_illegal_callback(sign, counting_illegal_callback_fn, &ecount);
+    secp256k1_context_set_illegal_callback(vrfy, counting_illegal_callback_fn, &ecount);
+
+    /** generate keypair data **/
+    secp256k1_testrand256(sk);
+    CHECK(secp256k1_keypair_create(sign, &keypair, sk) == 1);
+    CHECK(secp256k1_keypair_xonly_pub(sign, &pk, NULL, &keypair) == 1);
+    memset(&zero_pk, 0, sizeof(zero_pk));
+
+    /** generate a signature **/
+    secp256k1_testrand256(msg);
+    CHECK(secp256k1_schnorrsig_sign32(sign, sig, msg, &keypair, NULL) == 1);
+    CHECK(secp256k1_schnorrsig_verify(vrfy, sig, msg, sizeof(msg), &pk));
+
+    CHECK(batch1 != NULL);
+    CHECK(batch2 != NULL);
+
+    /** main test body **/
+    ecount = 0;
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch1, sig, msg, sizeof(msg), &pk) == 1);
+    CHECK(ecount == 0);
+    CHECK(secp256k1_batch_verify(none, batch1) == 1);
+    CHECK(ecount == 0);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch2, NULL, msg, sizeof(msg), &pk) == 0);
+    CHECK(ecount == 1);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch2, sig, NULL, sizeof(msg), &pk) == 0);
+    CHECK(ecount == 2);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch2, sig, msg, sizeof(msg), NULL) == 0);
+    CHECK(ecount == 3);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch2, sig, msg, sizeof(msg), &zero_pk) == 0);
+    CHECK(ecount == 4);
+    CHECK(secp256k1_batch_add_schnorrsig(none, NULL, sig, msg, sizeof(msg), &pk) == 0);
+    CHECK(ecount == 5);
+
+    /** NULL msg with valid signature **/
+    ecount = 0;
+    CHECK(secp256k1_schnorrsig_sign_custom(sign, nullmsg_sig, NULL, 0, &keypair, NULL) == 1);
+    CHECK(secp256k1_batch_usable(none, batch1) == 1);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch1, nullmsg_sig, NULL, 0, &pk) == 1);
+    CHECK(ecount == 0);
+    CHECK(secp256k1_batch_verify(none, batch1) == 1);
+
+    /** NULL msg with invalid signature **/
+    CHECK(secp256k1_batch_usable(none, batch2) == 1);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch2, sig, NULL, 0, &pk) == 1);
+    CHECK(ecount == 0);
+    CHECK(secp256k1_batch_verify(none, batch2) == 0);
+
+    /** batch_add_ should ignore unusable batch object (i.e, batch->result = 0) **/
+    ecount = 0;
+    CHECK(secp256k1_batch_usable(none, batch2) == 0);
+    CHECK(ecount == 0);
+    CHECK(secp256k1_batch_add_schnorrsig(none, batch2, sig, msg, sizeof(msg), &pk) == 0);
+    CHECK(ecount == 0);
+
+    ecount = 0;
+    secp256k1_batch_destroy(ctx, batch1);
+    CHECK(ecount == 0);
+    secp256k1_batch_destroy(ctx, batch2);
+    CHECK(ecount == 0);
+
+    secp256k1_context_destroy(none);
+    secp256k1_context_destroy(sign);
+    secp256k1_context_destroy(vrfy);
+}
+
 void run_batch_add_schnorrsig_tests(void) {
     run_batch_schnorrsig_randomizer_gen_tests();
+    test_batch_add_schnorrsig_api();
 }
 
 

@@ -652,8 +652,10 @@ void test_schnorrsig_bip_vectors(void) {
         };
         test_schnorrsig_bip_vectors_check_verify(pk, msg, sig, 0);
     #ifdef ENABLE_MODULE_BATCH
-        /*todo: think about this test */
-        /* test_schnorrsig_bip_vectors_check_batch_verify(pk, msg, sig, 1, 0); */
+        /* batch_add_schnorrsig passes since R.x = 1.
+         * batch_verify fails since R (with R.x = 1 & R.y = even) does not
+         * lie on libsecp256k1 */
+        test_schnorrsig_bip_vectors_check_batch_verify(pk, msg, sig, 1, 0);
     #endif
     }
     {

@@ -4278,6 +4278,8 @@ void test_ecmult_multi(secp256k1_scratch *scratch, secp256k1_ecmult_multi_func e
     }
 }
 
+/** helper function used by `test_ecmult_multi_random` and `test_ecmult_strauss_batch_internal_random`
+ *  to generate inputs (scalars, points, g_scalar) for multi-scalar point multiplication */
 void ecmult_multi_random_generate_inp(secp256k1_gej *expected, secp256k1_scalar *g_scalar, secp256k1_scalar *scalars, secp256k1_gej *gejs, int *inp_len, int *nonzero_inp_len, int *is_g_nonzero, int *mults_performed) {
     /* Temporaries. */
     secp256k1_scalar sc_tmp;
@@ -4469,10 +4471,9 @@ int test_ecmult_multi_random(secp256k1_scratch *scratch) {
     return mults;
 }
 
-int test_ecmult_strauss_prealloc_random(secp256k1_scratch *scratch) {
-    /* This test is very similar to test_ecmult_multi_random, but for
-     *  ecmult_strauss_batch_prealloc_scratch
-     */
+int test_ecmult_strauss_batch_internal_random(secp256k1_scratch *scratch) {
+    /* Large random test for `ecmult_strauss_batch_internal`. This test is
+     * very similar to `test_ecmult_multi_random`. */
 
     /* These 4 variables define the eventual input to the ecmult_multi function.
      * g_scalar is the G scalar fed to it (or NULL, possibly, if g_scalar=0), and
@@ -4518,16 +4519,9 @@ int test_ecmult_strauss_prealloc_random(secp256k1_scratch *scratch) {
     secp256k1_gej_neg(&computed, &computed);
     secp256k1_gej_add_var(&computed, &computed, &expected, NULL);
     CHECK(secp256k1_gej_is_infinity(&computed));
-    return mults;
-}
 
-void test_ecmult_strauss_batch_prealloc_scratch(void) {
-    /* todo: change the scratch size */
-    secp256k1_scratch *scratch = secp256k1_scratch_create(&ctx->error_callback, 819200);
-    size_t checkpoint = secp256k1_scratch_checkpoint(&ctx->error_callback, scratch);
-    test_ecmult_strauss_prealloc_random(scratch);
     secp256k1_scratch_apply_checkpoint(&ctx->error_callback, scratch, checkpoint);
-    secp256k1_scratch_destroy(&ctx->error_callback, scratch);
+    return mults;
 }
 
 void test_ecmult_multi_batch_single(secp256k1_ecmult_multi_func ecmult_multi) {
@@ -4720,11 +4714,12 @@ void test_ecmult_multi_batching(void) {
 
 void run_ecmult_multi_tests(void) {
     secp256k1_scratch *scratch;
-    int64_t todo = (int64_t)320 * count;
+    int64_t todo_multi = (int64_t)320 * count;
+    /* todo: what should be the intial val of `todo_strauss_internal` */
+    int64_t todo_strauss_internal = (int64_t)320 * count;
 
     test_secp256k1_pippenger_bucket_window_inv();
     test_ecmult_multi_pippenger_max_points();
-    test_ecmult_strauss_batch_prealloc_scratch();
     scratch = secp256k1_scratch_create(&ctx->error_callback, 819200);
     test_ecmult_multi(scratch, secp256k1_ecmult_multi_var);
     test_ecmult_multi(NULL, secp256k1_ecmult_multi_var);
@@ -4732,8 +4727,11 @@ void run_ecmult_multi_tests(void) {
     test_ecmult_multi_batch_single(secp256k1_ecmult_pippenger_batch_single);
     test_ecmult_multi(scratch, secp256k1_ecmult_strauss_batch_single);
     test_ecmult_multi_batch_single(secp256k1_ecmult_strauss_batch_single);
-    while (todo > 0) {
-        todo -= test_ecmult_multi_random(scratch);
+    while (todo_multi > 0) {
+        todo_multi -= test_ecmult_multi_random(scratch);
+    }
+    while (todo_strauss_internal > 0) {
+        todo_strauss_internal -= test_ecmult_strauss_batch_internal_random(scratch);
     }
     secp256k1_scratch_destroy(&ctx->error_callback, scratch);
 

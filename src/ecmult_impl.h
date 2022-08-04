@@ -385,7 +385,7 @@ static int secp256k1_ecmult_strauss_batch_internal(const secp256k1_callback* err
 }
 
 /** Run ecmult_strauss_wnaf on the given points and scalars. Returns 0 if the
- *  scratch space if empty. `n_points` number of scalars and points are
+ *  scratch space is empty. `n_points` number of scalars and points are
  *  extracted from `cbdata` using `cb` and stored on the scratch space.
  */
 static int secp256k1_ecmult_strauss_batch(const secp256k1_callback* error_callback, secp256k1_scratch *scratch, secp256k1_gej *r, const secp256k1_scalar *inp_g_sc, secp256k1_ecmult_multi_callback cb, void *cbdata, size_t n_points, size_t cb_offset) {

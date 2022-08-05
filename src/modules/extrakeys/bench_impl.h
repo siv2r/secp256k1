@@ -12,8 +12,8 @@ typedef struct {
     secp256k1_context *ctx;
 #ifdef ENABLE_MODULE_BATCH
     secp256k1_batch *batch;
-#endif
     int n;
+#endif
 
     const secp256k1_keypair **keypairs;
     const unsigned char **pks;
@@ -34,18 +34,19 @@ void bench_xonly_pubkey_tweak_add_check(void* arg, int iters) {
 }
 
 #ifdef ENABLE_MODULE_BATCH
-void bench_tweak_checks_batch_verify(void* arg, int iters) {
+void bench_xonly_pubkey_tweak_add_check_n(void* arg, int iters) {
     bench_tweak_check_data *data = (bench_tweak_check_data *)arg;
-    int i;
+    int i, j;
 
-    for (i = 0; i < iters; i++) {
-        secp256k1_xonly_pubkey pk;
-        CHECK(secp256k1_xonly_pubkey_parse(data->ctx, &pk, data->pks[i]) == 1);
-        CHECK(secp256k1_batch_usable(data->ctx, data->batch) == 1);
-        CHECK(secp256k1_batch_add_xonlypub_tweak_check(data->ctx, data->batch, data->tweaked_pks[i], *data->tweaked_pk_parities[i], &pk, data->tweaks[i]) == 1);
+    for (j = 0; j < iters/data->n; j++) {
+        for (i = 0; i < data->n; i++) {
+            secp256k1_xonly_pubkey pk;
+            CHECK(secp256k1_xonly_pubkey_parse(data->ctx, &pk, data->pks[j+i]) == 1);
+            CHECK(secp256k1_batch_usable(data->ctx, data->batch) == 1);
+            CHECK(secp256k1_batch_add_xonlypub_tweak_check(data->ctx, data->batch, data->tweaked_pks[j+i], *data->tweaked_pk_parities[j+i], &pk, data->tweaks[j+i]) == 1);
+        }
+        CHECK(secp256k1_batch_verify(data->ctx, data->batch) == 1);
     }
-
-    CHECK(secp256k1_batch_verify(data->ctx, data->batch) == 1);
 }
 #endif
 
@@ -99,7 +100,18 @@ void run_extrakeys_bench(int iters, int argc, char** argv) {
 
     if (d || have_flag(argc, argv, "extrakeys") || have_flag(argc, argv, "tweak_add_check")) run_benchmark("tweak_add_check", bench_xonly_pubkey_tweak_add_check, NULL, NULL, (void *) &data, 10, iters);
 #ifdef ENABLE_MODULE_BATCH
-    if (d || have_flag(argc, argv, "extrakeys") || have_flag(argc, argv, "batch_verify") || have_flag(argc, argv, "tweak_checks_batch_verify")) run_benchmark("tweak_checks_batch_verify", bench_tweak_checks_batch_verify, NULL, NULL, (void *) &data, 10, iters);
+    if (d || have_flag(argc, argv, "extrakeys") || have_flag(argc, argv, "batch_verify") || have_flag(argc, argv, "tweak_check_batch_verify")) {
+        for (i = 1; i <= iters; i = i*1.2 + 1) {
+            char name[64];
+            int divisible_iters;
+            sprintf(name, "tweak_check_batch_verify_%d", (int) i);
+
+            data.n = i;
+            divisible_iters = iters - (iters % data.n);
+            run_benchmark(name, bench_xonly_pubkey_tweak_add_check_n, NULL, NULL, (void *) &data, 3, divisible_iters);
+            fflush(stdout);
+        }
+    }
 #endif
 
     for (i = 0; i < iters; i++) {

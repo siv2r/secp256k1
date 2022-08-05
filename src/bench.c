@@ -52,20 +52,14 @@ void help(int default_iters) {
     printf("   schnorrsig_sign          : Schnorr sigining algorithm\n");
     printf("   schnorrsig_verify        : Schnorr verification algorithm\n");
 # ifdef ENABLE_MODULE_BATCH
-    printf("   schnorrsigs_batch_verify : Batch verification of Schnorr signatures\n");
+    printf("   schnorrsig_batch_verify  : Batch verification of Schnorr signatures\n");
 # endif
 #endif
 
 #ifdef ENABLE_MODULE_EXTRAKEYS
-    printf("   tweaked_pubkey_verify    : Tweaked pubkey verification algorithm\n");
+    printf("   tweak_add_check          : Checks if tweaked x-only pubkey is valid\n");
 # ifdef ENABLE_MODULE_BATCH
-    printf("   tweakedpubs_batch_verify : Batch verification of tweaked pubkeys\n");
-# endif
-#endif
-
-#ifdef ENABLE_MODULE_BATCH
-# if defined(ENABLE_MODULE_SCHNORRSIG) && defined(ENABLE_MODULE_EXTRAKEYS)
-    printf("   mixed_batch_verify       : Batch verification of both schnorrsigs and tweaked pubs\n");
+    printf("   tweak_check_batch_verify : Batch verification of tweaked x-only pubkeys check\n");
 # endif
 #endif
 
@@ -165,7 +159,7 @@ int main(int argc, char** argv) {
 
     /* Check for invalid user arguments */
     char* valid_args[] = {"ecdsa", "verify", "ecdsa_verify", "sign", "ecdsa_sign", "ecdh", "recover",
-                         "ecdsa_recover", "schnorrsig", "schnorrsig_verify", "schnorrsig_sign", "batch_verify", "schnorrsigs_batch_verify", "extrakeys", "tweak_add_check", "tweak_checks_batch_verify"};
+                         "ecdsa_recover", "schnorrsig", "schnorrsig_verify", "schnorrsig_sign", "batch_verify", "schnorrsig_batch_verify", "extrakeys", "tweak_add_check", "tweak_check_batch_verify"};
     size_t valid_args_size = sizeof(valid_args)/sizeof(valid_args[0]);
     int invalid_args = have_invalid_args(argc, argv, valid_args, valid_args_size);
 

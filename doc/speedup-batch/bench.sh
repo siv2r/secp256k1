@@ -10,3 +10,4 @@ make clean
 ./configure --enable-experimental --enable-module-batch --enable-module-schnorrsig >> "$cur_dir/$output_file.log"
 make -j
 ./bench schnorrsig > "$cur_dir/$output_file"
+./bench extrakeys >> "$cur_dir/$output_file"

@@ -22,12 +22,20 @@ set grid
 set logscale x
 set mxtics 10
 
-single_val=system("cat single.dat")
+# Generate graph of Schnorr signature benchmark
+schnorrsig_single_val=system("cat schnorrsig_single.dat")
 set xrange [1.1:]
 set xtics add ("2" 2)
 set yrange [0.9:]
 set ytics -1,0.1,3
 set ylabel "Speedup over single verification"
 set term png size 800,600
-set output 'speedup-batch.png'
-plot    "batch.dat" using 1:(single_val/$2) with points title "" ls 1
+set output 'schnorrsig-speedup-batch.png'
+plot    "schnorrsig_batch.dat" using 1:(schnorrsig_single_val/$2) with points title "" ls 1
+
+# Generate graph of tweaked x-only pubkey check benchmark
+set title "Batch tweaked x-only pubkey check in libsecp256k1"
+set xlabel "Number of tweak checks (logarithmic)"
+tweak_single_val=system("cat tweak_single.dat")
+set output 'tweakcheck-speedup-batch.png'
+plot    "tweak_batch.dat" using 1:(tweak_single_val/$2) with points title "" ls 1

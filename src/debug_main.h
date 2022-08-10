@@ -39,6 +39,8 @@ static void print_scalar(const secp256k1_scalar *x) {
  */
 static void print_fe(const secp256k1_fe *inp) {
     unsigned char value[32];
+
+    secp256k1_fe_normalize_var(inp);
     secp256k1_fe_get_b32(value, inp);
     print_buf(value, 32);
 
@@ -97,15 +99,11 @@ static unsigned char *hex_str_to_buf(int *out_len, const unsigned char *inp,
 }
 
 static void print_ge(secp256k1_ge *inp) {
-    /* normalize the field elements */
-    secp256k1_fe_normalize_var(&inp->x);
-    secp256k1_fe_normalize_var(&inp->y);
-
     /* print the x and y coordinates */
     printf("X: ");
-    print_fe(&inp->x);
+    print_fe(&inp->x); /* internally normalizes the field element, then prints */
     printf("\nY: ");
-    print_fe(&inp->y);
+    print_fe(&inp->y); /* internally normalizes the field element, then prints */
     printf("\ninf: %d", inp->infinity);
 }
 

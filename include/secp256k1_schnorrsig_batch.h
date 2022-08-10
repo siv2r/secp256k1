@@ -13,10 +13,10 @@ extern "C" {
  *  signature (see include/secp256k1_schnorrsig.h).
  */
 
-/** Adds a Schnorr signature to the batch verification object (secp256k1_batch)
+/** Adds a Schnorr signature to the batch object (secp256k1_batch)
  *  defined in the Batch module (see include/secp256k1_batch.h).
  *
- *  Returns: 1: successfully added the verify data to the batch
+ *  Returns: 1: successfully added the signature to the batch
  *           0: unparseable signature or unusable batch (according to
  *              secp256k1_batch_usable).
  *  Args:    ctx: a secp256k1 context object (can be initialized for none).

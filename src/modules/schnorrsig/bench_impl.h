@@ -19,6 +19,8 @@ typedef struct {
     secp256k1_context *ctx;
 #ifdef ENABLE_MODULE_BATCH
     secp256k1_batch *batch;
+    /* number of signatures to batch verify.
+     * it varies from 1 to iters with 20% increments */
     int n;
 #endif
 

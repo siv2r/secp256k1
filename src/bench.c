@@ -201,6 +201,14 @@ int main(int argc, char** argv) {
     }
 #endif
 
+#ifndef ENABLE_MODULE_BATCH
+    if (have_flag(argc, argv, "batch_verify") || have_flag(argc, argv, "schnorrsig_batch_verify") || have_flag(argc, argv, "tweak_check_batch_verify")) {
+        fprintf(stderr, "./bench: Schnorr signatures module not enabled.\n");
+        fprintf(stderr, "Use ./configure --enable-module-schnorrsig.\n\n");
+        return 1;
+    }
+#endif
+
     /* ECDSA verification benchmark */
     data.ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
 
@@ -240,7 +248,7 @@ int main(int argc, char** argv) {
 #endif
 
 #ifdef ENABLE_MODULE_EXTRAKEYS
-    /* Schnorr signature benchmarks */
+    /* Extrakeys benchmarks */
     run_extrakeys_bench(iters, argc, argv);
 #endif
 

@@ -22,6 +22,7 @@
 #include "hash_impl.h"
 #include "scratch_impl.h"
 #include "selftest.h"
+#include "debug_main.h"
 
 #ifdef SECP256K1_NO_BUILD
 # error "secp256k1.h processed without SECP256K1_BUILD defined while building secp256k1.c"
@@ -764,10 +765,12 @@ int secp256k1_tagged_sha256(const secp256k1_context* ctx, unsigned char *hash32,
 
 #ifdef ENABLE_MODULE_SCHNORRSIG
 # include "modules/schnorrsig/main_impl.h"
+# include "modules/schnorrsig/debug_schnorr.h"
 #endif
 
 #ifdef ENABLE_MODULE_BATCH
 # include "modules/batch/main_impl.h"
+# include "modules/batch/debug_batch.h"
 # ifdef ENABLE_MODULE_EXTRAKEYS
 #  include "modules/extrakeys/batch_add_impl.h"
 # endif

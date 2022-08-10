@@ -6,10 +6,12 @@
 #include "src/hash.h"
 #include "src/modules/batch/main_impl.h"
 
-/* The number of objects allocated on the scratch space by
- * secp256k1_batch_add_schnorrsig*/
+/* The number of points (or scalars) allocated on the scratch space
+ * by `secp256k1_batch_add_schnorrsig` */
 #define BATCH_SCHNORRSIG_SCRATCH_OBJS 2
 
+/** Computes a 16-byte deterministic randomizer by
+ *  SHA256(batch_add_tag || sig || msg || compressed pubkey) */
 static void secp256k1_batch_schnorrsig_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const unsigned char *compressed_pk33) {
     secp256k1_sha256 sha256_cpy;
     unsigned char batch_add_type = (unsigned char) schnorrsig;
@@ -53,10 +55,11 @@ static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ct
     return 1;
 }
 
-/** Adds the given schnorrsig data to the batch object.
+/** Adds the given schnorr signature to the batch.
  *
  *  Updates the batch object by:
  *     1. adding the points R and P to the scratch space
+ *          -> both the points are of type `secp256k1_gej`
  *     2. adding the scalars ai and ai.e to the scratch space
  *          -> ai   is the scalar coefficient of R (in multi multiplication)
  *          -> ai.e is the scalar coefficient of P (in multi multiplication)
@@ -65,11 +68,11 @@ static int secp256k1_batch_schnorrsig_randomizer_set(const secp256k1_context *ct
  *  Conventions used above:
  *     -> R (nonce commitment) = EC point whose y = even and x = sig64[0:32]
  *     -> P (public key)       = pubkey
- *     -> ai (randomizer)      = sha256_tagged(sig64 || msg || pubkey)
+ *     -> ai (randomizer)      = sha256_tagged(batch_add_tag || sig64 || msg || pubkey)
  *     -> e (challenge)        = sha256_tagged(sig64[0:32] || pk.x || msg)
  *     -> s                    = sig64[32:64]
  *
- * This function's algorithm is based on secp256k1_schnorrsig_verify.
+ * This function is based on `secp256k1_schnorrsig_verify`.
  */
 int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch *batch, const unsigned char *sig64, const unsigned char *msg, size_t msglen, const secp256k1_xonly_pubkey *pubkey) {
     secp256k1_scalar s;
@@ -106,7 +109,8 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
     }
 
     /* if insufficient space in batch, verify the inputs (stored in curr batch) and
-     * save the result. Then, clear the batch to extend its capacity */
+     * save the result. This extends the batch capacity since `secp256k1_batch_verify`
+     * clears the batch after verification. */
     if (batch->capacity - batch->len < BATCH_SCHNORRSIG_SCRATCH_OBJS) {
         secp256k1_batch_verify(ctx, batch);
     }
@@ -124,19 +128,20 @@ int secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batch
     /* append point P to the scratch space */
     secp256k1_gej_set_ge(&batch->points[i+1], &pk);
 
-    /* Compute e */
+    /* compute e (challenge) */
     secp256k1_fe_get_b32(buf, &pk.x);
     secp256k1_schnorrsig_challenge(&e, &sig64[0], msg, msglen, buf);
 
-    /* Compute ai (randomizer) */
+    /* compute ai (randomizer) */
     if (batch->len == 0) {
-        /* set randomizer as 1 for the first term in batch */
+        /* don't generate a randomizer for the first term in the batch to improve
+         * the computation speed. hence, set the randomizer to 1. */
         ai = secp256k1_scalar_one;
     } else if (!secp256k1_batch_schnorrsig_randomizer_set(ctx, batch, &ai, sig64, msg, msglen, pubkey)) {
         return 0;
     }
 
-    /* append scalars ai, ai.e respectively to scratch space */
+    /* append scalars ai and ai.e to scratch space (order shouldn't change) */
     batch->scalars[i] = ai;
     secp256k1_scalar_mul(&e, &e, &ai);
     batch->scalars[i+1] = e;

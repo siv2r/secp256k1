@@ -12,6 +12,8 @@ typedef struct {
     secp256k1_context *ctx;
 #ifdef ENABLE_MODULE_BATCH
     secp256k1_batch *batch;
+    /* number of tweak checks to batch verify.
+     * it varies from 1 to iters with 20% increments */
     int n;
 #endif
 
@@ -95,7 +97,6 @@ void run_extrakeys_bench(int iters, int argc, char** argv) {
         CHECK(secp256k1_xonly_pubkey_from_pubkey(data.ctx, &output_pk_xonly, tweaked_pk_parity, &output_pk));
         CHECK(secp256k1_xonly_pubkey_serialize(data.ctx, tweaked_pk_char, &output_pk_xonly) == 1);
         CHECK(secp256k1_xonly_pubkey_serialize(data.ctx, pk_char, &pk) == 1);
-        /* todo: should batch_add_xonlypub_tweak_check be here instead?  */
     }
 
     if (d || have_flag(argc, argv, "extrakeys") || have_flag(argc, argv, "tweak_add_check")) run_benchmark("tweak_add_check", bench_xonly_pubkey_tweak_add_check, NULL, NULL, (void *) &data, 10, iters);

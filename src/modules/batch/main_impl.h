@@ -1,9 +1,3 @@
-/**********************************************************************
- * Copyright (c) 2022 Jonas Nick, Sivaram Dhakshinamoorthy            *
- * Distributed under the MIT software license, see the accompanying   *
- * file COPYING or http://www.opensource.org/licenses/mit-license.php.*
- **********************************************************************/
-
 #ifndef SECP256K1_MODULE_BATCH_MAIN_H
 #define SECP256K1_MODULE_BATCH_MAIN_H
 
@@ -11,35 +5,39 @@
 #include "src/hash.h"
 #include "src/scratch.h"
 
-/* Assume two batch objects batch1 and batch2. If we call
- * batch_add_tweaks on batch1 and batch_add_schnorrsig on batch2.
- * In this case same randomizer will be created if the bytes added to
- * batch1->sha and batch2->sha are same. Including this tag during
- * randomizer generation prevents such mishaps. */
-enum batch_add_type {schnorrsig = 1, tweak_check = 2};
-
-/* Maximum number of terms (schnorrsig or tweak checks) for
- * which the strauss algorithm remains efficient */
+/* Maximum number of terms (schnorrsig or tweak checks) on a batch
+ * for which `secp256k1_batch_verify` remains efficient */
 #define STRAUSS_MAX_TERMS_PER_BATCH 80
+
+/* Assume two batch objects (batch1 and batch2) and we call
+ * `batch_add_tweak_check` on batch1 and `batch_add_schnorrsig` on batch2.
+ * In this case, the same randomizer will be generated if the input bytes to
+ * batch1 and batch2 are the same (even though we use different `batch_add_` funcs).
+ * Including this tag during randomizer generation (to differentiate btw
+ * `batch_add_` funcs) will prevent such mishaps. */
+enum batch_add_type {schnorrsig = 1, tweak_check = 2};
 
 /** Opaque data structure that holds information required for the batch verification.
  *
  *  Members:
- *       data: scratch space object that contains points (gej) and their
+ *       data: scratch space object that contains points (_gej) and their
  *             respective scalars. To be used in Multi-Scalar Multiplication
  *             algorithms such as Strauss and Pippenger.
  *    scalars: pointer to scalars allocated on the scratch space.
  *     points: pointer to points allocated on the scratch space.
- *       sc_g: scalar corresponding to the generator point in Multi-Scalar
+ *       sc_g: scalar corresponding to the generator point (G) in Multi-Scalar
  *             Multiplication equation.
  *     sha256: contains hash of all the inputs (schnorrsig/tweaks) present in
- *             the batch object. Used for generating a random secp256k1_scalar
+ *             the batch object, expect the first input. Used for generating a random secp256k1_scalar
  *             for each term added by secp256k1_batch_add_*.
- *        len: number of points (or scalars) present on batch object's scratch space.
- *   capacity: max number of points (or scalars) that the batch object can hold.
- *     result: tells whether the given set of inputs (schnorrsigs/tweaks) is valid
+ *     sha256: contains hash of all inputs (except the first one) present in the batch.
+ *             `secp256k1_batch_add_` APIs use these for randomizing the scalar (i.e., multiplying
+ *             it with a newly generated scalar) before adding it to the batch.
+ *        len: number of points (or scalars) present in the batch.
+ *   capacity: max number of points (or scalars) that the batch can hold.
+ *     result: tells whether the given set of inputs (schnorrsigs or tweak checks) is valid
  *             or invalid. 1 = valid and 0 = invalid. By default, this is set to 1
- *             during batch object's creation (i.e, `secp256k1_batch_create`).
+ *             during batch object creation (i.e., `secp256k1_batch_create`).
  *
  *  The following struct name is typdef as secp256k1_batch (in include/secp256k1_batch.h).
  */
@@ -56,7 +54,6 @@ struct secp256k1_batch_struct{
 
 static size_t secp256k1_batch_scratch_size(int max_terms) {
     size_t ret = secp256k1_strauss_scratch_size(max_terms) + STRAUSS_SCRATCH_OBJECTS*16;
-    /* Return value of 0 is reserved for error */
     VERIFY_CHECK(ret != 0);
 
     return ret;
@@ -65,10 +62,12 @@ static size_t secp256k1_batch_scratch_size(int max_terms) {
 /** Clears the scalar and points allocated on the batch object's scratch space */
 static void secp256k1_batch_scratch_clear(secp256k1_batch* batch) {
     secp256k1_scalar_clear(&batch->sc_g);
+    /* setting the len = 0 will suffice (instead of clearing the memory)
+     * since, there are no secrets stored on the scratch space */
     batch->len = 0;
 }
 
-/** Allocates space for `batch->capacity` amount of scalars and points on batch
+/** Allocates space for `batch->capacity` number of scalars and points on batch
  *  object's scratch space */
 static int secp256k1_batch_scratch_alloc(const secp256k1_callback* error_callback, secp256k1_batch* batch) {
     size_t checkpoint = secp256k1_scratch_checkpoint(error_callback, batch->data);
@@ -109,7 +108,7 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
     secp256k1_batch* batch;
     size_t batch_scratch_size;
     unsigned char zeros[16] = {0};
-    /* max limit on scratch space size in a batch */
+    /* max number of points on scratch up to which Strauss multi multiplication is efficient */
     if (max_terms > STRAUSS_MAX_TERMS_PER_BATCH) {
         max_terms = STRAUSS_MAX_TERMS_PER_BATCH;
     }
@@ -117,8 +116,7 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(max_terms != 0);
     /* Check that `max_terms` is less than half of the maximum size_t value. This is necessary because
-     * `batch_add_schnorrsig` and `batch_add_xonlypub_tweak_check` appends two (scalar, point) pairs
-     * for each input (sig/tweak) */
+     * `batch_add_schnorrsig` appends two (scalar, point) pairs for one signature */
     ARG_CHECK(max_terms <= SIZE_MAX / 2);
     /* Check that max_terms is less than 2^31 to ensure the same behavior of this function on 32-bit
      * and 64-bit platforms. */
@@ -133,11 +131,11 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
         if (batch->data == NULL) {
             return NULL;
         }
-        /* allocate 2*max_terms scalars and points on scratch space */
+        /* allocate memeory for 2*max_terms number of scalars and points on scratch space */
         batch->capacity = 2*max_terms;
         if (!secp256k1_batch_scratch_alloc(&ctx->error_callback, batch)) {
-        /* if scalar or point allocation fails, free all the previous the allocated memory
-           and return NULL */
+            /* if scratch memory allocation fails, free all the previous the allocated memory
+            and return NULL */
             secp256k1_scratch_destroy(&ctx->error_callback, batch->data);
             free(batch);
             return NULL;
@@ -164,6 +162,7 @@ void secp256k1_batch_destroy(const secp256k1_context *ctx, secp256k1_batch *batc
 
     if (batch != NULL) {
         if(batch->data != NULL) {
+            /* can't destroy a scratch space with non-zero size */
             secp256k1_scratch_apply_checkpoint(&ctx->error_callback, batch->data, 0);
             secp256k1_scratch_destroy(&ctx->error_callback, batch->data);
         }
@@ -178,11 +177,10 @@ int secp256k1_batch_usable(const secp256k1_context *ctx, const secp256k1_batch *
     return batch->result;
 }
 
-/** verifies the schnorrsig/tweaks present in the batch object.
- *
- * For computing the multi-scalar point multiplication, calls secp256k1_ecmult_strauss_batch
- * on a scratch space filled with 2n points and 2n scalars, where n = no of terms (user input
- * in secp256k1_batch_create)
+/** verifies the inputs (schnorrsig or tweak_check) by performing multi-scalar point
+ *  multiplication on the scalars (`batch->scalars`) and points (`batch->points`)
+ *  present in the batch. Uses `secp256k1_ecmult_strauss_batch_internal` to perform
+ *  the multi-multiplication.
  *
  * Fails if:
  * 0 != -(s1 + a2*s2 + ... + au*su)G
@@ -199,7 +197,13 @@ int secp256k1_batch_verify(const secp256k1_context *ctx, secp256k1_batch *batch)
     }
 
     if (batch->len > 0) {
-        int mid_res = secp256k1_ecmult_strauss_batch_internal(&ctx->error_callback, batch->data, &resj, batch->scalars, batch->points, &batch->sc_g, batch->len) && secp256k1_gej_is_infinity(&resj);
+        int strauss_ret = secp256k1_ecmult_strauss_batch_internal(&ctx->error_callback, batch->data, &resj, batch->scalars, batch->points, &batch->sc_g, batch->len);
+        int mid_res = secp256k1_gej_is_infinity(&resj);
+
+        /* `_strauss_batch_internal` should not fail due to insufficient memory.
+         * `batch_create` will allocate memeory needed by `_strauss_batch_internal`. */
+        VERIFY_CHECK(strauss_ret != 0);
+
         batch->result = batch->result && mid_res;
         secp256k1_batch_scratch_clear(batch);
     }

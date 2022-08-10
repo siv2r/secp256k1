@@ -6,10 +6,12 @@
 #include "src/hash.h"
 #include "src/modules/batch/main_impl.h"
 
-/* The number of objects allocated on the scratch space by
- * secp256k1_batch_add_xonlypub_tweak_check */
-#define BATCH_TWEAK_CHECK_SCRATCH_OBJS 2
+/* The number of points (or scalars) allocated on the scratch space
+ * by `secp256k1_batch_add_xonlypub_tweak_check` */
+#define BATCH_TWEAK_CHECK_SCRATCH_OBJS 1
 
+/** Computes a 16-byte deterministic randomizer by
+ *  SHA256(batch_add_tag || tweaked pubkey || parity || tweak || internal pubkey) */
 static void secp256k1_batch_xonlypub_tweak_randomizer_gen(unsigned char *randomizer32, secp256k1_sha256 *sha256, const unsigned char *tweaked_pubkey32, const unsigned char *tweaked_pk_parity, const unsigned char *internal_pk33, const unsigned char *tweak32) {
     secp256k1_sha256 sha256_cpy;
     unsigned char batch_add_type = (unsigned char) tweak_check;
@@ -55,11 +57,11 @@ static int secp256k1_batch_xonlypub_tweak_randomizer_set(const secp256k1_context
     return 1;
 }
 
-/** Adds the given tweaked pubkey check data to the batch object.
+/** Adds the given x-only tweaked public key check to the batch.
  *
  *  Updates the batch object by:
  *     1. adding the point P-Q to the scratch space
- *          -> the point is of type secp256k1_gej
+ *          -> the point is of type `secp256k1_gej`
  *     2. adding the scalar ai to the scratch space
  *          -> ai is the scalar coefficient of P-Q (in multi multiplication)
  *     3. incrementing sc_g (scalar of G) by ai.tweak
@@ -68,11 +70,11 @@ static int secp256k1_batch_xonlypub_tweak_randomizer_set(const secp256k1_context
  *     -> Q (tweaked pubkey)   = EC point where parity(y) = tweaked_pk_parity
  *                               and x = tweaked_pubkey32
  *     -> P (internal pubkey)  = internal pubkey
- *     -> ai (randomizer)      = sha256_tagged(tweaked_pubkey32  ||
+ *     -> ai (randomizer)      = sha256_tagged(batch_add_tag || tweaked_pubkey32  ||
  *                                             tweaked_pk_parity || tweak32 || pubkey)
  *     -> tweak (challenge)    = tweak32
  *
- * This function's algorithm is based on secp256k1_xonly_pubkey_tweak_add_check.
+ * This function is based on `secp256k1_xonly_pubkey_tweak_add_check`.
  */
 int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp256k1_batch *batch, const unsigned char *tweaked_pubkey32, int tweaked_pk_parity, const secp256k1_xonly_pubkey *internal_pubkey,const unsigned char *tweak32) {
     secp256k1_scalar tweak;
@@ -108,7 +110,8 @@ int secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp2
     }
 
     /* if insufficient space in batch, verify the inputs (stored in curr batch) and
-     * save the result. Then, clear the batch to extend its capacity */
+     * save the result. This extends the batch capacity since `secp256k1_batch_verify`
+     * clears the batch after verification. */
     if (batch->capacity - batch->len < BATCH_TWEAK_CHECK_SCRATCH_OBJS) {
         secp256k1_batch_verify(ctx, batch);
     }

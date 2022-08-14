@@ -25,7 +25,9 @@ unsigned char tweaked_pubkey[N_CHECKS][32];
 int tweaked_pk_parity[N_CHECKS];
 unsigned char tweak[N_CHECKS][32];
 
-#define N_TERMS (N_CHECKS + N_SIGS)
+/* 2*N_SIGS since one schnorrsig creates two scalar-point pairs in batch
+ * whereas one tweak check creates one scalar-point pair in batch */
+#define N_TERMS (N_CHECKS + 2*N_SIGS)
 
 /* generate key pair required for sign and verify */
 int create_keypair(secp256k1_context *ctx) {

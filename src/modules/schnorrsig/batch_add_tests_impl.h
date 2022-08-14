@@ -99,6 +99,7 @@ void test_schnorrsig_sign_verify_check_batch(secp256k1_batch *batch, unsigned ch
 }
 
 #define N_SIGS 3
+#define ONE_SIG 1
 /* Creates N_SIGS valid signatures and verifies them with batch_verify.
  * Then flips some bits and checks that verification now fails. This is a
  * variation of `test_schnorrsig_sign_verify` (in schnorrsig/tests_impl.h) */
@@ -116,12 +117,12 @@ void test_schnorrsig_sign_batch_verify(void) {
 
     /* batch[0] will be used where batch_add and batch_verify
      * are expected to succed */
-    batch[0] = secp256k1_batch_create(ctx, N_SIGS, NULL);
+    batch[0] = secp256k1_batch_create(ctx, 2*N_SIGS, NULL);
     for (i = 0; i < N_SIGS; i++) {
-        batch[i+1] = secp256k1_batch_create(ctx, 1, NULL);
+        batch[i+1] = secp256k1_batch_create(ctx, 2*ONE_SIG, NULL);
     }
-    batch_fail1 = secp256k1_batch_create(ctx, 1, NULL);
-    batch_fail2 = secp256k1_batch_create(ctx, 1, NULL);
+    batch_fail1 = secp256k1_batch_create(ctx, 2*ONE_SIG, NULL);
+    batch_fail2 = secp256k1_batch_create(ctx, 2*ONE_SIG, NULL);
 
     secp256k1_testrand256(sk);
     CHECK(secp256k1_keypair_create(ctx, &keypair, sk));
@@ -207,6 +208,7 @@ void test_schnorrsig_sign_batch_verify(void) {
     secp256k1_batch_destroy(ctx, batch_fail2);
 }
 #undef N_SIGS
+/* ONE_SIG is undefined after `test_batch_add_schnorrsig_api` */
 
 void test_batch_add_schnorrsig_api(void) {
     unsigned char sk[32];
@@ -221,9 +223,9 @@ void test_batch_add_schnorrsig_api(void) {
     secp256k1_context *none = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
     secp256k1_context *sign = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
     secp256k1_context *vrfy = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
-    secp256k1_batch *batch1 = secp256k1_batch_create(none, 1, NULL);
+    secp256k1_batch *batch1 = secp256k1_batch_create(none, 2*ONE_SIG, NULL);
     /* batch2 is used when batch_add_schnorrsig is expected to fail */
-    secp256k1_batch *batch2 = secp256k1_batch_create(none, 1, NULL);
+    secp256k1_batch *batch2 = secp256k1_batch_create(none, 2*ONE_SIG, NULL);
     int ecount;
 
     secp256k1_context_set_error_callback(none, counting_illegal_callback_fn, &ecount);
@@ -295,6 +297,7 @@ void test_batch_add_schnorrsig_api(void) {
     secp256k1_context_destroy(sign);
     secp256k1_context_destroy(vrfy);
 }
+#undef ONE_SIG
 
 void run_batch_add_schnorrsig_tests(void) {
     int i;

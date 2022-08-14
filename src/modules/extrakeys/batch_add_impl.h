@@ -6,7 +6,7 @@
 #include "src/hash.h"
 #include "src/modules/batch/main_impl.h"
 
-/* The number of points (or scalars) allocated on the scratch space
+/* The number of scalar-point pairs allocated on the scratch space
  * by `secp256k1_batch_add_xonlypub_tweak_check` */
 #define BATCH_TWEAK_CHECK_SCRATCH_OBJS 1
 

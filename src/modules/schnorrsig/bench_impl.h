@@ -82,7 +82,7 @@ void run_schnorrsig_bench(int iters, int argc, char** argv) {
     data.msgs = (const unsigned char **)malloc(iters * sizeof(unsigned char *));
     data.sigs = (const unsigned char **)malloc(iters * sizeof(unsigned char *));
 #ifdef ENABLE_MODULE_BATCH
-    data.batch = secp256k1_batch_create(data.ctx, iters, NULL);
+    data.batch = secp256k1_batch_create(data.ctx, 2*iters, NULL);
     CHECK(data.batch != NULL);
 #endif
 

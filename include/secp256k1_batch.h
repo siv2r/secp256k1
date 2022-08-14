@@ -32,13 +32,17 @@ typedef struct secp256k1_batch_struct secp256k1_batch;
  *  called at most twice for every call of this function.
  *
  *  Returns: a newly created batch object.
- *  Args:        ctx:  an existing `secp256k1_context` object. Not to be confused
- *                     with the batch object object that this function creates.
- *  In:    max_terms:  max number of (scalar, curve point) pairs that the batch
- *                     object can store.
- *        aux_rand16:  16 bytes of fresh randomness. While recommended to provide
- *                     this, it is only supplemental to security and can be NULL. A
- *                     NULL argument is treated the same as an all-zero one.
+ *  Args:        ctx: an existing `secp256k1_context` object. Not to be confused
+ *                    with the batch object object that this function creates.
+ *  In:    max_terms: Max number of (scalar, curve point) pairs that the batch
+ *                    object can store.
+ *                    1. `batch_add_schnorrsig`         - adds two scalar-point pairs to the batch
+ *                    2. `batch_add_xonpub_tweak_check` - adds one scalar-point pair to the batch
+ *                    Hence, for adding n schnorrsigs and m tweak checks, `max_terms`
+ *                    should be set to 2*n + m.
+ *        aux_rand16: 16 bytes of fresh randomness. While recommended to provide
+ *                    this, it is only supplemental to security and can be NULL. A
+ *                    NULL argument is treated the same as an all-zero one.
  */
 SECP256K1_API secp256k1_batch* secp256k1_batch_create(
     const secp256k1_context* ctx,
@@ -52,7 +56,7 @@ SECP256K1_API secp256k1_batch* secp256k1_batch_create(
  *
  *  Args:       ctx: a secp256k1 context object.
  *            batch: an existing batch object to destroy, constructed
- *                   using secp256k1_batch_create
+ *                   using `secp256k1_batch_create`
  */
 SECP256K1_API void secp256k1_batch_destroy(
     const secp256k1_context* ctx,

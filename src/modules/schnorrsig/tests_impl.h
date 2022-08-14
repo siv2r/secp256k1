@@ -277,7 +277,7 @@ void test_schnorrsig_bip_vectors_check_batch_verify(const unsigned char *pk_seri
     secp256k1_batch *batch;
 
     CHECK(secp256k1_xonly_pubkey_parse(ctx, &pk, pk_serialized));
-    batch = secp256k1_batch_create(ctx, 1, NULL);
+    batch = secp256k1_batch_create(ctx, 2, NULL);
     CHECK(batch != NULL);
     CHECK(secp256k1_batch_usable(ctx, batch) == 1);
     CHECK(add_expected == secp256k1_batch_add_schnorrsig(ctx, batch, sig, msg32, 32, &pk));

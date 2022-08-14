@@ -34,9 +34,9 @@ void test_batch_sha256_tagged(void) {
     test_batch_sha256_eq(&sha, &sha_optimized);
 }
 
-#define MAX_TERMS 20
 #define N_SIGS 10
 #define N_TWK_CHECKS 10
+#define N_TERMS (N_TWK_CHECKS + 2*N_SIGS)
 void test_batch_api(void) {
 
 #ifdef ENABLE_MODULE_EXTRAKEYS
@@ -117,13 +117,14 @@ void test_batch_api(void) {
     batch_none = secp256k1_batch_create(none, 1, NULL);
     CHECK(batch_none != NULL);
     CHECK(ecount == 0);
-    batch_sign = secp256k1_batch_create(sign, N_SIGS, NULL);
+    /* 2*N_SIGS since one schnorrsig creates two scalar-point pair in batch */
+    batch_sign = secp256k1_batch_create(sign, 2*N_SIGS, NULL);
     CHECK(batch_sign != NULL);
     CHECK(ecount == 0);
     batch_vrfy = secp256k1_batch_create(vrfy, N_TWK_CHECKS - 1, aux_rand16);
     CHECK(batch_vrfy != NULL);
     CHECK(ecount == 0);
-    batch_both = secp256k1_batch_create(both, MAX_TERMS/4, aux_rand16);
+    batch_both = secp256k1_batch_create(both, N_TERMS/4, aux_rand16);
     CHECK(batch_both != NULL);
     CHECK(ecount == 0);
     /* ARG_CHECK(max_terms != 0) in `batch_create` should fail*/
@@ -199,9 +200,9 @@ void test_batch_api(void) {
     secp256k1_context_destroy(both);
     secp256k1_context_destroy(sttc);
 }
-#undef MAX_TERMS
 #undef N_SIGS
 #undef N_TWK_CHECKS
+#undef N_TERMS
 
 
 void run_batch_tests(void) {

@@ -20,10 +20,9 @@ extern "C" {
 
 /** Opaque data structure that holds information required for the batch verification.
  *
- *  The purpose of this structure is to store elliptic curve points, their scalars,
- *  and scalar of generator point participating in Multi-Scalar Point Multiplication
- *  computation. This computation is done by secp256k1_ecmult_strauss_batch or
- *  secp256k1_ecmult_pippenger_batch.
+ *  The purpose of this structure is to store elliptic curve points, their scalar
+ *  coefficients, and scalar coefficient of generator point participating in Multi-Scalar
+ *  Point Multiplication computation, which is done by secp256k1_ecmult_strauss_batch_internal.
  */
 typedef struct secp256k1_batch_struct secp256k1_batch;
 

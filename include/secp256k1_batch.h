@@ -1,7 +1,7 @@
 #ifndef SECP256K1_BATCH_H
 #define SECP256K1_BATCH_H
 
-#include "include/secp256k1.h"
+#include "secp256k1.h"
 
 #ifdef __cplusplus
 extern "C" {

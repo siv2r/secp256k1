@@ -116,7 +116,7 @@ void run_schnorrsig_bench(int iters, int argc, char** argv) {
     if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "verify") || have_flag(argc, argv, "schnorrsig_verify")) run_benchmark("schnorrsig_verify", bench_schnorrsig_verify, NULL, NULL, (void *) &data, 10, iters);
 #ifdef ENABLE_MODULE_BATCH
     if (d || have_flag(argc, argv, "schnorrsig") || have_flag(argc, argv, "batch_verify") || have_flag(argc, argv, "schnorrsig_batch_verify")) {
-        for (i = 1; i <= iters; i = i*1.2 + 1) {
+        for (i = 1; i <= iters; i = (int)(i*1.2 + 1)) {
             char name[64];
             int divisible_iters;
             sprintf(name, "schnorrsig_batch_verify_%d", (int) i);

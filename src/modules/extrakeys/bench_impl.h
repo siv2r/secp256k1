@@ -102,7 +102,7 @@ void run_extrakeys_bench(int iters, int argc, char** argv) {
     if (d || have_flag(argc, argv, "extrakeys") || have_flag(argc, argv, "tweak_add_check")) run_benchmark("tweak_add_check", bench_xonly_pubkey_tweak_add_check, NULL, NULL, (void *) &data, 10, iters);
 #ifdef ENABLE_MODULE_BATCH
     if (d || have_flag(argc, argv, "extrakeys") || have_flag(argc, argv, "batch_verify") || have_flag(argc, argv, "tweak_check_batch_verify")) {
-        for (i = 1; i <= iters; i = i*1.2 + 1) {
+        for (i = 1; i <= iters; i = (int)(i*1.2 + 1)) {
             char name[64];
             int divisible_iters;
             sprintf(name, "tweak_check_batch_verify_%d", (int) i);

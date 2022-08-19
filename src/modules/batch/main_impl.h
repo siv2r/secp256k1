@@ -2,6 +2,12 @@
 #define SECP256K1_MODULE_BATCH_MAIN_H
 
 #include "include/secp256k1_batch.h"
+#include "src/hash.h"
+#include "src/scratch.h"
+
+/* Maximum number of scalar-point pairs on the batch
+ * for which `secp256k1_batch_verify` remains efficient */
+#define STRAUSS_MAX_TERMS_PER_BATCH 106
 
 /* Assume two batch objects (batch1 and batch2) and we call
  * `batch_add_tweak_check` on batch1 and `batch_add_schnorrsig` on batch2.
@@ -102,6 +108,10 @@ secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max
     secp256k1_batch* batch;
     size_t batch_scratch_size;
     unsigned char zeros[16] = {0};
+    /* max number of scalar-point pairs on scratch up to which Strauss multi multiplication is efficient */
+    if (max_terms > STRAUSS_MAX_TERMS_PER_BATCH) {
+        max_terms = STRAUSS_MAX_TERMS_PER_BATCH;
+    }
 
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK(max_terms != 0);

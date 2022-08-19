@@ -6949,10 +6949,16 @@ void run_ecdsa_edge_cases(void) {
 
 #ifdef ENABLE_MODULE_EXTRAKEYS
 # include "modules/extrakeys/tests_impl.h"
+# ifdef ENABLE_MODULE_BATCH
+#  include "modules/extrakeys/batch_add_tests_impl.h"
+# endif
 #endif
 
 #ifdef ENABLE_MODULE_SCHNORRSIG
 # include "modules/schnorrsig/tests_impl.h"
+# ifdef ENABLE_MODULE_BATCH
+#  include "modules/schnorrsig/batch_add_tests_impl.h"
+# endif
 #endif
 
 #ifdef ENABLE_MODULE_BATCH
@@ -7257,10 +7263,16 @@ int main(int argc, char **argv) {
 
 #ifdef ENABLE_MODULE_EXTRAKEYS
     run_extrakeys_tests();
+# ifdef ENABLE_MODULE_BATCH
+    run_batch_add_xonlypub_tweak_tests();
+# endif
 #endif
 
 #ifdef ENABLE_MODULE_SCHNORRSIG
     run_schnorrsig_tests();
+# ifdef ENABLE_MODULE_BATCH
+    run_batch_add_schnorrsig_tests();
+# endif
 #endif
 
 #ifdef ENABLE_MODULE_BATCH

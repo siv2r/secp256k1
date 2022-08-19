@@ -1,1 +1,2 @@
 include_HEADERS += include/secp256k1_batch.h
+noinst_HEADERS += src/modules/batch/tests_impl.h

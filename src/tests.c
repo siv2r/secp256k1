@@ -4892,25 +4892,25 @@ static int test_ecmult_multi_random(void) {
                     num_nonzero == 1 && !nonzero_result ? 1 :
                     (int)testrand_bits(1);
     /* Which g_scalar pointer to pass into ecmult_multi(). */
-    const secp256k1_scalar* g_scalar_ptr = (g_nonzero || testrand_bits(1)) ? &g_scalar : NULL;
+    secp256k1_scalar* g_scalar_ptr = (g_nonzero || testrand_bits(1)) ? g_scalar : NULL;
     /* How many EC multiplications were performed in this function. */
     int mults = 0;
     /* How many randomization steps to apply to the input list. */
     int rands = (int)testrand_bits(3);
     if (rands > num_nonzero) rands = num_nonzero;
 
-    secp256k1_gej_set_infinity(&expected);
+    secp256k1_gej_set_infinity(expected);
     secp256k1_gej_set_infinity(&gejs[0]);
     secp256k1_scalar_set_int(&scalars[0], 0);
 
     if (g_nonzero) {
         /* If g_nonzero, set g_scalar to nonzero value r. */
-        testutil_random_scalar_order_test(&g_scalar);
+        testutil_random_scalar_order_test(g_scalar);
         if (!nonzero_result) {
             /* If expected=0 is desired, add a (a*r, -(1/a)*g) term to compensate. */
             CHECK(num_nonzero > filled);
             testutil_random_scalar_order_test(&sc_tmp);
-            secp256k1_scalar_mul(&scalars[filled], &sc_tmp, &g_scalar);
+            secp256k1_scalar_mul(&scalars[filled], &sc_tmp, g_scalar);
             secp256k1_scalar_inverse_var(&sc_tmp, &sc_tmp);
             secp256k1_scalar_negate(&sc_tmp, &sc_tmp);
             secp256k1_ecmult_gen(&CTX->ecmult_gen_ctx, &gejs[filled], &sc_tmp);
@@ -4930,7 +4930,7 @@ static int test_ecmult_multi_random(void) {
     if (nonzero_result) {
         /* Compute the expected result using normal ecmult. */
         CHECK(filled <= 1);
-        secp256k1_ecmult(&expected, &gejs[0], &scalars[0], &g_scalar);
+        secp256k1_ecmult(expected, &gejs[0], &scalars[0], g_scalar);
         mults += filled + g_nonzero;
     }
 
@@ -5000,6 +5000,54 @@ static int test_ecmult_multi_random(void) {
         }
     }
 
+    /* number of (scalars, points) inputs generated */
+    *inp_len = filled;
+    /* number of non-zero (scalars, points) inputs */
+    *nonzero_inp_len = num_nonzero;
+    /* ptr to g_scalar*/
+    g_scalar = g_scalar_ptr;
+    /* is mulciplicand of g nonzero? */
+    *is_g_nonzero = g_nonzero;
+    /* number of mults performed in this function */
+    *mults_performed += mults;
+}
+
+static int test_ecmult_multi_random(secp256k1_scratch *scratch) {
+    /* Large random test for ecmult_multi_* functions which exercises:
+     * - Few or many inputs (0 up to 128, roughly exponentially distributed).
+     * - Few or many 0*P or a*INF inputs (roughly uniformly distributed).
+     * - Including or excluding an nonzero a*G term (or such a term at all).
+     * - Final expected result equal to infinity or not (roughly 50%).
+     * - ecmult_multi_var, ecmult_strauss_single_batch, ecmult_pippenger_single_batch
+     */
+
+    /* These 4 variables define the eventual input to the ecmult_multi function.
+     * g_scalar is the G scalar fed to it (or NULL, possibly, if g_scalar=0), and
+     * scalars[0..filled-1] and gejs[0..filled-1] are the scalars and points
+     * which form its normal inputs. */
+    int filled = 0;
+    secp256k1_scalar g_scalar = SECP256K1_SCALAR_CONST(0, 0, 0, 0, 0, 0, 0, 0);
+    secp256k1_scalar *g_scalar_ptr = &g_scalar;
+    secp256k1_scalar scalars[128];
+    secp256k1_gej gejs[128];
+    /* The expected result, and the computed result. */
+    secp256k1_gej expected, computed;
+    /* Variables needed for the actual input to ecmult_multi. */
+    secp256k1_ge ges[128];
+    ecmult_multi_data data;
+    /* How many EC multiplications were performed in this function. */
+    int mults = 0;
+    int g_nonzero, num_nonzero;
+
+    /* Which multiplication function to use */
+    int fn = testrand_int(3);
+    secp256k1_ecmult_multi_func ecmult_multi = fn == 0 ? secp256k1_ecmult_multi_var :
+                                               fn == 1 ? secp256k1_ecmult_strauss_batch_single :
+                                               secp256k1_ecmult_pippenger_batch_single;
+
+    /* generate inputs and their ecmult_multi output */
+    ecmult_multi_random_generate_inp(&expected, g_scalar_ptr, scalars, gejs, &filled, &num_nonzero, &g_nonzero, &mults);
+
     /* Compute affine versions of all inputs. */
     secp256k1_ge_set_all_gej_var(ges, gejs, filled);
     /* Invoke ecmult_multi code. */
@@ -5009,6 +5057,7 @@ static int test_ecmult_multi_random(void) {
     CHECK(secp256k1_gej_eq_var(&computed, &expected));
     return mults;
 }
+
 
 static void test_ecmult_multi_batching(void) {
     static const int n_points = 200;
@@ -7288,6 +7337,10 @@ static void run_ecdsa_wycheproof(void) {
 # include "modules/ellswift/tests_impl.h"
 #endif
 
+#ifdef ENABLE_MODULE_BATCH
+# include "modules/batch/tests_impl.h"
+#endif
+
 static void run_secp256k1_memczero_test(void) {
     unsigned char buf1[6] = {1, 2, 3, 4, 5, 6};
     unsigned char buf2[sizeof(buf1)];
@@ -7625,6 +7678,9 @@ static const struct tf_test_module registry_modules[] = {
 #endif
 #ifdef ENABLE_MODULE_ELLSWIFT
     MAKE_TEST_MODULE(ellswift),
+#endif
+#ifdef ENABLE_MODULE_BATCH
+    MAKE_TEST_MODULE(batch),
 #endif
     MAKE_TEST_MODULE(utils),
 };

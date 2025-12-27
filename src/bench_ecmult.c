@@ -81,8 +81,7 @@ static void run_ecmult_multi_calib(bench_data* data) {
         /* Medium (Pippenger small windows, w=6..8) */
         200, 300, 500, 750, 1000, 1200,
         /* Large (Pippenger large windows, w=9..12) */
-        1500, 2000, 3000, 5000, 7500,
-        10000, 15000, 20000, 30000
+        1500, 2000, 3000, 5000, 7500, 10000, 15000, 20000
     };
     static const size_t n_batch_sizes = sizeof(batch_sizes) / sizeof(batch_sizes[0]);
 
@@ -107,12 +106,6 @@ static void run_ecmult_multi_calib(bench_data* data) {
         points[i] = data->pubkeys[i % POINTS];
         scalars[i] = data->scalars[i % POINTS];
     }
-
-    printf("# ECMULT_MULTI Calibration Data\n");
-    printf("# Format: ALGO,N,TIME_US (microseconds per batch)\n");
-    printf("# Copy the DATA section below into the Python script\n");
-    printf("#\n");
-    printf("# BEGIN DATA\n");
 
     /* Measure STRAUSS */
     algo = SECP256K1_ECMULT_MULTI_ALGO_STRAUSS;
@@ -168,12 +161,6 @@ static void run_ecmult_multi_calib(bench_data* data) {
             printf("%s,%lu,%.3f\n", algo_names[algo], (unsigned long)n, time_us);
         }
     }
-
-    printf("# END DATA\n");
-    printf("#\n");
-    printf("# To calculate ABCD constants, run:\n");
-    printf("#   ./bench_ecmult calib 2>&1 | python3 tools/ecmult_multi_calib.py\n");
-    printf("#\n");
 
     free(points);
     free(scalars);

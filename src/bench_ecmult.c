@@ -73,7 +73,17 @@ typedef struct {
  * values from the output.
  */
 static void run_ecmult_multi_calib(bench_data* data) {
-    static const size_t batch_sizes[] = {10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 30000};
+    static const size_t batch_sizes[] = {
+        /* Small (Strauss region) */
+        5, 10, 15, 20, 30, 50, 70,
+        /* Crossover region */
+        85, 88, 90, 100, 120, 150, 175,
+        /* Medium (Pippenger small windows, w=6..8) */
+        200, 300, 500, 750, 1000, 1200,
+        /* Large (Pippenger large windows, w=9..12) */
+        1500, 2000, 3000, 5000, 7500,
+        10000, 15000, 20000, 30000
+    };
     static const size_t n_batch_sizes = sizeof(batch_sizes) / sizeof(batch_sizes[0]);
 
     static const char* algo_names[] = {

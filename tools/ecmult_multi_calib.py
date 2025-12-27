@@ -9,12 +9,17 @@ def linreg(x, y):
     if abs(d) < 1e-10: return sy/n, 0
     return (sy - ((n*sxy - sx*sy)/d)*sx)/n, (n*sxy - sx*sy)/d
 
+if len(sys.argv) != 2:
+    print(f"Usage: {sys.argv[0]} <calib_data.csv>", file=sys.stderr)
+    sys.exit(1)
+
 data = defaultdict(list)
-for line in sys.stdin:
-    line = line.strip()
-    if not line or line.startswith('#'): continue
-    p = line.split(',')
-    if len(p) == 3: data[p[0]].append((int(p[1]), float(p[2])))
+with open(sys.argv[1], 'r') as f:
+    for line in f:
+        line = line.strip()
+        if not line or line.startswith('#'): continue
+        p = line.split(',')
+        if len(p) == 3: data[p[0]].append((int(p[1]), float(p[2])))
 
 res = {}
 for algo, m in data.items():

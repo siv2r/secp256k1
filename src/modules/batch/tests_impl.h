@@ -26,11 +26,12 @@ static void test_batch_sha256_eq(const secp256k1_sha256 *sha1, const secp256k1_s
 /* Checks that hash initialized by secp256k1_batch_sha256_tagged has the
  * expected state. */
 static void test_batch_sha256_tagged(void) {
+    const secp256k1_hash_ctx *hash_ctx = secp256k1_get_hash_context(CTX);
     unsigned char tag[] = {'B', 'I', 'P', '0', '3', '4', '0', '/', 'b', 'a', 't', 'c', 'h'};
     secp256k1_sha256 sha;
     secp256k1_sha256 sha_optimized;
 
-    secp256k1_sha256_initialize_tagged(&sha, (unsigned char *) tag, sizeof(tag));
+    secp256k1_sha256_initialize_tagged(hash_ctx, &sha, (unsigned char *) tag, sizeof(tag));
     secp256k1_batch_sha256_tagged(&sha_optimized);
     test_batch_sha256_eq(&sha, &sha_optimized);
 }

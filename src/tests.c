@@ -4852,33 +4852,13 @@ static void run_ecmult_const_tests(void) {
     ecmult_const_mult_xonly();
 }
 
-static int test_ecmult_multi_random(void) {
-    /* Large random test for ecmult_multi which exercises:
-     * - Few or many inputs (0 up to 128, roughly exponentially distributed).
-     * - Few or many 0*P or a*INF inputs (roughly uniformly distributed).
-     * - Including or excluding an nonzero a*G term (or such a term at all).
-     * - Final expected result equal to infinity or not (roughly 50%).
-     * - Different algorithm selections based on batch size
-     */
-
-    /* These 4 variables define the eventual input to the ecmult_multi function.
-     * g_scalar is the G scalar fed to it (or NULL, possibly, if g_scalar=0), and
-     * scalars[0..filled-1] and gejs[0..filled-1] are the scalars and points
-     * which form its normal inputs. */
-    int filled = 0;
-    secp256k1_scalar g_scalar = secp256k1_scalar_zero;
-    secp256k1_scalar scalars[128];
-    secp256k1_gej gejs[128];
-    /* The expected result, and the computed result. */
-    secp256k1_gej expected, computed;
+static void ecmult_multi_random_generate_inp(secp256k1_gej *expected, secp256k1_scalar *g_scalar, secp256k1_scalar *scalars, secp256k1_gej *gejs, int *inp_len, int *nonzero_inp_len, int *is_g_nonzero, int *mults_performed) {
     /* Temporaries. */
     secp256k1_scalar sc_tmp;
     secp256k1_ge ge_tmp;
-    /* Variables needed for the actual input to ecmult_multi. */
-    secp256k1_ge ges[128];
-    size_t mem_limit = 1024 * 1024; /* 1 MB */
 
     int i;
+    int filled = 0;
     /* Simulate exponentially distributed num. */
     int num_bits = 2 + testrand_int(6);
     /* Number of (scalar, point) inputs (excluding g). */
@@ -5012,13 +4992,12 @@ static int test_ecmult_multi_random(void) {
     *mults_performed += mults;
 }
 
-static int test_ecmult_multi_random(secp256k1_scratch *scratch) {
+static int test_ecmult_multi_random(void) {
     /* Large random test for ecmult_multi_* functions which exercises:
      * - Few or many inputs (0 up to 128, roughly exponentially distributed).
      * - Few or many 0*P or a*INF inputs (roughly uniformly distributed).
      * - Including or excluding an nonzero a*G term (or such a term at all).
      * - Final expected result equal to infinity or not (roughly 50%).
-     * - ecmult_multi_var, ecmult_strauss_single_batch, ecmult_pippenger_single_batch
      */
 
     /* These 4 variables define the eventual input to the ecmult_multi function.
@@ -5034,16 +5013,10 @@ static int test_ecmult_multi_random(secp256k1_scratch *scratch) {
     secp256k1_gej expected, computed;
     /* Variables needed for the actual input to ecmult_multi. */
     secp256k1_ge ges[128];
-    ecmult_multi_data data;
     /* How many EC multiplications were performed in this function. */
     int mults = 0;
     int g_nonzero, num_nonzero;
-
-    /* Which multiplication function to use */
-    int fn = testrand_int(3);
-    secp256k1_ecmult_multi_func ecmult_multi = fn == 0 ? secp256k1_ecmult_multi_var :
-                                               fn == 1 ? secp256k1_ecmult_strauss_batch_single :
-                                               secp256k1_ecmult_pippenger_batch_single;
+    size_t mem_limit = 1024 * 1024; /* 1 MB */
 
     /* generate inputs and their ecmult_multi output */
     ecmult_multi_random_generate_inp(&expected, g_scalar_ptr, scalars, gejs, &filled, &num_nonzero, &g_nonzero, &mults);

@@ -139,6 +139,7 @@ typedef struct {
 
 int secp256k1_musig_pubkey_agg(const secp256k1_context* ctx, secp256k1_xonly_pubkey *agg_pk, secp256k1_musig_keyagg_cache *keyagg_cache, const secp256k1_pubkey * const* pubkeys, size_t n_pubkeys) {
     secp256k1_musig_pubkey_agg_ecmult_data ecmult_data;
+    const secp256k1_hash_ctx *hash_ctx;
     secp256k1_gej pkj;
     secp256k1_ge pkp;
     secp256k1_ge *points = NULL;
@@ -147,6 +148,7 @@ int secp256k1_musig_pubkey_agg(const secp256k1_context* ctx, secp256k1_xonly_pub
     size_t i;
 
     VERIFY_CHECK(ctx != NULL);
+    hash_ctx = secp256k1_get_hash_context(ctx);
     if (agg_pk != NULL) {
         memset(agg_pk, 0, sizeof(*agg_pk));
     }
@@ -189,7 +191,7 @@ int secp256k1_musig_pubkey_agg(const secp256k1_context* ctx, secp256k1_xonly_pub
 #else
         (void) secp256k1_pubkey_load(ctx, &points[i], pubkeys[i]);
 #endif
-        secp256k1_musig_keyaggcoef_internal(&scalars[i], ecmult_data.pks_hash, &points[i], &ecmult_data.second_pk);
+        secp256k1_musig_keyaggcoef_internal(hash_ctx, &scalars[i], ecmult_data.pks_hash, &points[i], &ecmult_data.second_pk);
     }
 
     /* TODO: Assumes that Strauss will be the optimal algorithm almost every

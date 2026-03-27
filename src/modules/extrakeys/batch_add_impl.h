@@ -124,7 +124,7 @@ void secp256k1_batch_add_xonlypub_tweak_check(const secp256k1_context* ctx, secp
     secp256k1_ge_neg(&q, &q);
     secp256k1_gej_set_ge(&tmpj, &q);
     secp256k1_gej_add_ge_var(&tmpj, &tmpj, &pk, NULL);
-    batch->points[i] = tmpj;
+    secp256k1_ge_set_gej_var(&batch->points[i], &tmpj);
 
     /* Compute ai (randomizer) */
     if (batch->len == 0) {

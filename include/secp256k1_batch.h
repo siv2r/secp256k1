@@ -25,17 +25,17 @@ typedef struct secp256k1_batch_struct secp256k1_batch;
  *
  *  Returns: pointer to a newly created batch context object.
  *  Args:        ctx: pointer to a secp256k1 context object.
- *  In:    max_terms: the maximum number of schnorr signatures and/or tweak checks
- *                    that will be added to the batch object. For n schnorr
- *                    signatures and m tweak checks, this should be set to at
- *                    least 2*n + m.
+ *  In:    mem_limit: the memory budget (in bytes) for the multi-scalar
+ *                    multiplication algorithm's internal working memory.
+ *                    The batch's capacity (maximum number of scalar-point
+ *                    pairs) is computed from this budget.
  *        aux_rand16: 16 bytes of fresh randomness. While recommended to provide
  *                    this, it is only supplemental to security and can be NULL. A
  *                    NULL argument is treated the same as an all-zero one.
  */
 SECP256K1_API secp256k1_batch* secp256k1_batch_create(
     const secp256k1_context* ctx,
-    size_t max_terms,
+    size_t mem_limit,
     const unsigned char *aux_rand16
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_WARN_UNUSED_RESULT;
 

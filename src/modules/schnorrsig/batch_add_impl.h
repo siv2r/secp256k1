@@ -122,10 +122,10 @@ void secp256k1_batch_add_schnorrsig(const secp256k1_context* ctx, secp256k1_batc
         batch->result = 0;
         return;
     }
-    secp256k1_gej_set_ge(&batch->points[i], &r);
+    batch->points[i] = r;
 
-    /* append point P to the scratch space */
-    secp256k1_gej_set_ge(&batch->points[i+1], &pk);
+    /* append point P to the batch */
+    batch->points[i+1] = pk;
 
     /* compute e */
     secp256k1_fe_get_b32(buf, &pk.x);

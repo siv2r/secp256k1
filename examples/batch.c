@@ -27,7 +27,7 @@ unsigned char tweak[N_CHECKS][32];
 
 /* 2*N_SIGS since one schnorrsig creates two scalar-point pairs in batch
  * whereas one tweak check creates one scalar-point pair in batch */
-#define N_TERMS (N_CHECKS + 2*N_SIGS)
+
 
 /* generate key pair required for sign and verify */
 int create_keypair(secp256k1_context *ctx) {
@@ -98,7 +98,7 @@ int main(void) {
         return 1;
     }
 
-    batch = secp256k1_batch_create(ctx, N_TERMS, auxiliary_rand);
+    batch = secp256k1_batch_create(ctx, 256 * 1024, auxiliary_rand);
 
     assert(ctx != NULL);
     assert(batch != NULL);

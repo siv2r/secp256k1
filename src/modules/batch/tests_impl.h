@@ -69,9 +69,9 @@ static void test_batch_api(void) {
 
     /** main test body **/
     /* batch_create tests */
-    batch = secp256k1_batch_create(CTX, N_TERMS, aux_rand16);
+    batch = secp256k1_batch_create(CTX, 256 * 1024, aux_rand16);
     CHECK(batch != NULL);
-    /* ARG_CHECK(max_terms != 0) in `batch_create` should fail*/
+    /* ARG_CHECK(mem_limit != 0) in `batch_create` should fail*/
     CHECK_ILLEGAL(CTX, secp256k1_batch_create(CTX, 0, NULL));
 
 #ifdef ENABLE_MODULE_EXTRAKEYS

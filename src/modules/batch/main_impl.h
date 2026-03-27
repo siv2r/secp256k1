@@ -3,10 +3,6 @@
 
 #include "../../../include/secp256k1_batch.h"
 
-/* Maximum number of scalar-point pairs on the batch
- * for which `secp256k1_batch_verify` remains efficient */
-#define STRAUSS_MAX_TERMS_PER_BATCH 106
-
 /* Ensures unique randomizers across different batch_add_* functions.
  *
  * Without this tag, two batch contexts could generate identical randomizers
@@ -21,11 +17,8 @@ enum batch_add_type {schnorrsig = 1, tweak_check = 2};
 /** Opaque data structure for batch verification context.
  *
  *  Members:
- *       data: scratch space containing points (secp256k1_gej) and their
- *             corresponding scalars for use in multi-scalar multiplication
- *             algorithms (Strauss, Pippenger).
- *    scalars: pointer to scalars allocated in the scratch space.
- *     points: pointer to points allocated in the scratch space.
+ *    scalars: pointer to dynamically allocated scalars array.
+ *     points: pointer to dynamically allocated points (secp256k1_ge) array.
  *       sc_g: scalar corresponding to the generator point (G) in the
  *             multi-scalar multiplication equation.
  *     sha256: hash of all inputs (signatures/tweaks) in the batch except the first.
@@ -33,55 +26,23 @@ enum batch_add_type {schnorrsig = 1, tweak_check = 2};
  *             secp256k1_batch_add_*.
  *        len: number of scalar-point pairs currently in the batch.
  *   capacity: maximum number of scalar-point pairs the batch can hold.
+ *  mem_limit: the memory budget (in bytes) for the multi-scalar multiplication
+ *             algorithm's internal working memory.
  *     result: indicates whether all inputs (signatures or tweak checks) are valid.
  *             1 = valid, 0 = invalid. Initialized to 1 by secp256k1_batch_create.
  *
  *  This struct is typedef'd as secp256k1_batch in include/secp256k1_batch.h.
  */
 struct secp256k1_batch_struct{
-    secp256k1_scratch *data;
     secp256k1_scalar *scalars;
-    secp256k1_gej *points;
+    secp256k1_ge *points;
     secp256k1_scalar sc_g;
     secp256k1_sha256 sha256;
     size_t len;
     size_t capacity;
+    size_t mem_limit;
     int result;
 };
-
-static size_t secp256k1_batch_scratch_size(int max_terms) {
-    size_t ret = SECP256K1_STRAUSS_POINT_SIZE * max_terms;
-    VERIFY_CHECK(ret != 0);
-    return ret;
-}
-
-/** Clears the scalar and points allocated on the batch object's scratch space */
-static void secp256k1_batch_scratch_clear(secp256k1_batch* batch) {
-    secp256k1_scalar_set_int(&batch->sc_g, 0);
-    /* setting the len = 0 will suffice (instead of clearing the memory)
-     * since, there are no secrets stored on the scratch space */
-    batch->len = 0;
-}
-
-/** Allocates space for `batch->capacity` number of scalars and points on batch
- *  object's scratch space */
-static int secp256k1_batch_scratch_alloc(const secp256k1_callback* error_callback, secp256k1_batch* batch) {
-    size_t checkpoint = secp256k1_scratch_checkpoint(error_callback, batch->data);
-    size_t count = batch->capacity;
-
-    VERIFY_CHECK(count > 0);
-
-    batch->scalars = (secp256k1_scalar*)secp256k1_scratch_alloc(error_callback, batch->data, count*sizeof(secp256k1_scalar));
-    batch->points = (secp256k1_gej*)secp256k1_scratch_alloc(error_callback, batch->data, count*sizeof(secp256k1_gej));
-
-    /* If scalar or point allocation fails, restore scratch space to previous state */
-    if (batch->scalars == NULL || batch->points == NULL) {
-        secp256k1_scratch_apply_checkpoint(error_callback, batch->data, checkpoint);
-        return 0;
-    }
-
-    return 1;
-}
 
 /* Initializes SHA256 with fixed midstate. This midstate was computed by applying
  * SHA256 to SHA256("BIP0340/batch")||SHA256("BIP0340/batch"). */
@@ -99,52 +60,46 @@ static void secp256k1_batch_sha256_tagged(secp256k1_sha256 *sha) {
     sha->bytes = 64;
 }
 
-secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t max_terms, const unsigned char *aux_rand16) {
+secp256k1_batch* secp256k1_batch_create(const secp256k1_context* ctx, size_t mem_limit, const unsigned char *aux_rand16) {
     const secp256k1_hash_ctx *hash_ctx;
-    size_t batch_size;
     secp256k1_batch* batch;
-    size_t batch_scratch_size;
+    size_t capacity;
     unsigned char zeros[16] = {0};
-    hash_ctx = secp256k1_get_hash_context(ctx);
-    /* max number of scalar-point pairs on scratch up to which Strauss multi multiplication is efficient */
-    if (max_terms > STRAUSS_MAX_TERMS_PER_BATCH) {
-        max_terms = STRAUSS_MAX_TERMS_PER_BATCH;
-    }
 
     VERIFY_CHECK(ctx != NULL);
-    ARG_CHECK(max_terms != 0);
+    ARG_CHECK(mem_limit != 0);
 
-    batch_size = sizeof(secp256k1_batch);
-    batch = (secp256k1_batch *)checked_malloc(&ctx->error_callback, batch_size);
-    batch_scratch_size = secp256k1_batch_scratch_size(max_terms);
-    if (batch != NULL) {
-        /* create scratch space inside batch object, if that fails return NULL*/
-        batch->data = secp256k1_scratch_create(&ctx->error_callback, batch_scratch_size);
-        if (batch->data == NULL) {
-            return NULL;
-        }
-        /* allocate memory for `max_terms` number of scalars and points on scratch space */
-        batch->capacity = max_terms;
-        if (!secp256k1_batch_scratch_alloc(&ctx->error_callback, batch)) {
-            /* if scratch memory allocation fails, free all the previous the allocated memory
-            and return NULL */
-            secp256k1_scratch_destroy(&ctx->error_callback, batch->data);
-            free(batch);
-            return NULL;
-        }
-
-        /* set remaining data members */
-        secp256k1_scalar_set_int(&batch->sc_g, 0);
-        secp256k1_batch_sha256_tagged(&batch->sha256);
-        if (aux_rand16 != NULL) {
-            secp256k1_sha256_write(hash_ctx, &batch->sha256, aux_rand16, 16);
-        } else {
-            /* use 16 bytes of 0x0000...000, if no fresh randomness provided */
-            secp256k1_sha256_write(hash_ctx, &batch->sha256, zeros, 16);
-        }
-        batch->len = 0;
-        batch->result = 1;
+    hash_ctx = secp256k1_get_hash_context(ctx);
+    capacity = secp256k1_ecmult_multi_batch_size(mem_limit);
+    if (capacity == 0) {
+        return NULL;
     }
+
+    batch = (secp256k1_batch *)checked_malloc(&ctx->error_callback, sizeof(secp256k1_batch));
+    if (batch == NULL) {
+        return NULL;
+    }
+
+    batch->scalars = (secp256k1_scalar *)checked_malloc(&ctx->error_callback, capacity * sizeof(secp256k1_scalar));
+    batch->points = (secp256k1_ge *)checked_malloc(&ctx->error_callback, capacity * sizeof(secp256k1_ge));
+    if (batch->scalars == NULL || batch->points == NULL) {
+        free(batch->scalars);
+        free(batch->points);
+        free(batch);
+        return NULL;
+    }
+
+    batch->capacity = capacity;
+    batch->mem_limit = mem_limit;
+    secp256k1_scalar_set_int(&batch->sc_g, 0);
+    secp256k1_batch_sha256_tagged(&batch->sha256);
+    if (aux_rand16 != NULL) {
+        secp256k1_sha256_write(hash_ctx, &batch->sha256, aux_rand16, 16);
+    } else {
+        secp256k1_sha256_write(hash_ctx, &batch->sha256, zeros, 16);
+    }
+    batch->len = 0;
+    batch->result = 1;
 
     return batch;
 }
@@ -153,7 +108,8 @@ void secp256k1_batch_reset(const secp256k1_context *ctx, secp256k1_batch *batch)
     VERIFY_CHECK(ctx != NULL);
     ARG_CHECK_VOID(batch != NULL);
 
-    secp256k1_batch_scratch_clear(batch);
+    batch->len = 0;
+    secp256k1_scalar_set_int(&batch->sc_g, 0);
     secp256k1_batch_sha256_tagged(&batch->sha256);
     batch->result = 1;
 }
@@ -163,18 +119,14 @@ void secp256k1_batch_destroy(const secp256k1_context *ctx, secp256k1_batch *batc
     ARG_CHECK_VOID(batch != NULL);
 
     if (batch != NULL) {
-        if(batch->data != NULL) {
-            /* can't destroy a scratch space with non-zero size */
-            secp256k1_scratch_apply_checkpoint(&ctx->error_callback, batch->data, 0);
-            secp256k1_scratch_destroy(&ctx->error_callback, batch->data);
-        }
+        free(batch->scalars);
+        free(batch->points);
         free(batch);
     }
 }
 
 int secp256k1_batch_verify(const secp256k1_context *ctx, secp256k1_batch *batch) {
     secp256k1_gej resj;
-    secp256k1_ge *points_ge;
     int ecmult_ret;
     int mid_res;
 
@@ -187,24 +139,15 @@ int secp256k1_batch_verify(const secp256k1_context *ctx, secp256k1_batch *batch)
     }
 
     if (batch->len > 0) {
-        points_ge = (secp256k1_ge *)checked_malloc(&ctx->error_callback, batch->len * sizeof(secp256k1_ge));
-        if (points_ge == NULL) {
-            batch->result = 0;
-            return 0;
-        }
-        secp256k1_ge_set_all_gej_var(points_ge, batch->points, batch->len);
-        ecmult_ret = secp256k1_ecmult_multi_internal(&ctx->error_callback, SECP256K1_ECMULT_MULTI_ALGO_STRAUSS, &resj, batch->len, points_ge, batch->scalars, &batch->sc_g);
-        free(points_ge);
+        ecmult_ret = secp256k1_ecmult_multi(&ctx->error_callback, &resj, batch->len, batch->points, batch->scalars, &batch->sc_g, batch->mem_limit);
         mid_res = secp256k1_gej_is_infinity(&resj);
 
-        /* `secp256k1_ecmult_multi_internal` should not fail due to insufficient memory.
-         * `batch_create` will allocate memory needed by `secp256k1_ecmult_multi_internal`. */
         VERIFY_CHECK(ecmult_ret != 0);
-        /* Silence -Wunused-variable when VERIFY is off */
         (void)ecmult_ret;
 
         batch->result = batch->result && mid_res;
-        secp256k1_batch_scratch_clear(batch);
+        batch->len = 0;
+        secp256k1_scalar_set_int(&batch->sc_g, 0);
     }
 
     return batch->result;

@@ -103,7 +103,7 @@ static void test_schnorrsig_sign_batch_verify_internal(void) {
     secp256k1_keypair keypair;
     secp256k1_xonly_pubkey pk;
     secp256k1_scalar s;
-    secp256k1_batch *batch = secp256k1_batch_create(CTX, 2*N_SIGS, NULL);
+    secp256k1_batch *batch = secp256k1_batch_create(CTX, 256 * 1024, NULL);
 
     testrand256(sk);
     CHECK(secp256k1_keypair_create(CTX, &keypair, sk));
@@ -196,7 +196,7 @@ static void test_batch_add_schnorrsig_api(void) {
     unsigned char sig[64];
     unsigned char nullmsg_sig[64];
 
-    secp256k1_batch *batch = secp256k1_batch_create(CTX, 2*ONE_SIG, NULL);
+    secp256k1_batch *batch = secp256k1_batch_create(CTX, 256 * 1024, NULL);
 
     /** generate keypair data **/
     testrand256(sk);

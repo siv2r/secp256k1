@@ -88,7 +88,7 @@ static void test_batch_add_xonlypub_tweak_api(void) {
     unsigned char overflows[32];
 
     /** setup **/
-    secp256k1_batch *batch = secp256k1_batch_create(CTX, 1, NULL);
+    secp256k1_batch *batch = secp256k1_batch_create(CTX, 256 * 1024, NULL);
 
     /** generate keypair data **/
     testrand256(sk);

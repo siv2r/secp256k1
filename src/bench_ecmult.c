@@ -45,6 +45,8 @@ static void help(const char *executable_path, int default_iters) {
     printf("pippenger_wnaf:   for all batch sizes\n");
     printf("strauss_wnaf:     for all batch sizes\n");
     printf("simple:           multiply and sum each point individually\n");
+    printf("calib:            calibrate ABCD values (existing, with range filtering)\n");
+    printf("calib_discover:   measure all algorithms at all batch sizes (no filtering)\n");
     printf("\n");
 }
 
@@ -205,6 +207,127 @@ static void run_ecmult_multi_calib(bench_data* data) {
     printf("#\n");
     printf("# To calculate ABCD constants, run:\n");
     printf("#   ./bench_ecmult calib 2>&1 | python3 tools/ecmult_multi_calib.py\n");
+    printf("#\n");
+
+    free(points);
+    free(scalars);
+}
+
+/*
+ * ABCD Calibration Discovery Benchmarks
+ *
+ * Measures ALL algorithms at ALL batch sizes without range filtering.
+ * Use doc/calibration/discover_ranges.py to find optimal calibration
+ * ranges from the output.
+ */
+static void run_ecmult_multi_calib_discover(bench_data* data) {
+    static const size_t batch_sizes[] = {
+        /* Fine-grained at small n (Strauss region + crossovers) */
+        2, 3, 4, 5, 7, 10, 13, 16, 20, 25, 30, 35, 40, 45, 50,
+        55, 60, 65, 70, 75, 80, 85, 88, 90, 95, 100,
+        /* Moderate density through Pippenger small windows */
+        110, 120, 130, 150, 175, 200, 250, 300, 350, 400, 500,
+        600, 750, 1000, 1200, 1500,
+        /* Sparser for large Pippenger windows */
+        2000, 2500, 3000, 4000, 5000, 7500,
+        10000, 12500, 15000, 20000, 25000, 30000, 40000, 50000
+    };
+    static const size_t n_batch_sizes = sizeof(batch_sizes) / sizeof(batch_sizes[0]);
+
+    static const char* algo_names[] = {
+        "TRIVIAL", "STRAUSS", "PIPPENGER_1", "PIPPENGER_2", "PIPPENGER_3",
+        "PIPPENGER_4", "PIPPENGER_5", "PIPPENGER_6", "PIPPENGER_7",
+        "PIPPENGER_8", "PIPPENGER_9", "PIPPENGER_10", "PIPPENGER_11", "PIPPENGER_12"
+    };
+
+    secp256k1_ge *points = NULL;
+    secp256k1_scalar *scalars = NULL;
+    secp256k1_gej result;
+    size_t max_points = batch_sizes[n_batch_sizes - 1];
+    int algo;
+    size_t i;
+    int base_iters = 1000;
+
+    points = (secp256k1_ge *)malloc(max_points * sizeof(secp256k1_ge));
+    scalars = (secp256k1_scalar *)malloc(max_points * sizeof(secp256k1_scalar));
+    CHECK(points != NULL);
+    CHECK(scalars != NULL);
+
+    for (i = 0; i < max_points; i++) {
+        points[i] = data->pubkeys[i % POINTS];
+        scalars[i] = data->scalars[i % POINTS];
+    }
+
+    printf("# ECMULT_MULTI Calibration Discovery Data\n");
+    printf("# Format: ALGO,N,TIME_US (microseconds per batch of N points)\n");
+    printf("#\n");
+    printf("# BEGIN DATA\n");
+
+    /* Measure all algorithms at all batch sizes (no range filtering) */
+    for (algo = 0; algo < SECP256K1_ECMULT_MULTI_NUM_ALGOS; algo++) {
+        for (i = 0; i < n_batch_sizes; i++) {
+            size_t n = batch_sizes[i];
+            int64_t t_start, t_end;
+            double time_us;
+            int iters = base_iters;
+            int iter;
+
+            /* Scale iterations for large batch sizes */
+            if (n >= 300) iters = base_iters / 2;
+            if (n >= 1000) iters = base_iters / 10;
+            if (n >= 5000) iters = base_iters / 50;
+            if (n >= 15000) iters = base_iters / 100;
+            if (iters < 3) iters = 3;
+
+            t_start = gettime_i64();
+            for (iter = 0; iter < iters; iter++) {
+                secp256k1_ecmult_multi_internal(&data->ctx->error_callback, algo,
+                                                &result, n, points, scalars, NULL);
+            }
+            t_end = gettime_i64();
+
+            time_us = (double)(t_end - t_start) / iters;
+            printf("%s,%lu,%.3f\n", algo_names[algo], (unsigned long)n, time_us);
+            fflush(stdout);
+        }
+    }
+
+    /* Measure individual ecmult baseline: n separate calls to secp256k1_ecmult */
+    {
+        secp256k1_gej point_gej;
+        for (i = 0; i < n_batch_sizes; i++) {
+            size_t n = batch_sizes[i];
+            int64_t t_start, t_end;
+            double time_us;
+            int iters = base_iters;
+            int iter;
+            size_t j;
+
+            if (n >= 300) iters = base_iters / 2;
+            if (n >= 1000) iters = base_iters / 10;
+            if (n >= 5000) iters = base_iters / 50;
+            if (n >= 15000) iters = base_iters / 100;
+            if (iters < 3) iters = 3;
+
+            t_start = gettime_i64();
+            for (iter = 0; iter < iters; iter++) {
+                for (j = 0; j < n; j++) {
+                    secp256k1_gej_set_ge(&point_gej, &points[j]);
+                    secp256k1_ecmult(&result, &point_gej, &scalars[j], NULL);
+                }
+            }
+            t_end = gettime_i64();
+
+            time_us = (double)(t_end - t_start) / iters;
+            printf("INDIVIDUAL,%lu,%.3f\n", (unsigned long)n, time_us);
+            fflush(stdout);
+        }
+    }
+
+    printf("# END DATA\n");
+    printf("#\n");
+    printf("# To discover optimal ranges, run:\n");
+    printf("#   ./bench_ecmult calib_discover 2>&1 | python3 doc/calibration/discover_ranges.py\n");
     printf("#\n");
 
     free(points);
@@ -481,6 +604,7 @@ int main(int argc, char **argv) {
     bench_data data;
     int i, p;
     int run_calib = 0;
+    int run_calib_discover = 0;
 
     int default_iters = 10000;
     int iters = get_iters(default_iters);
@@ -513,6 +637,8 @@ int main(int argc, char **argv) {
             data.forced_algo = BENCH_ALGO_AUTO;
         } else if(have_flag(argc, argv, "calib")) {
             run_calib = 1;
+        } else if(have_flag(argc, argv, "calib_discover")) {
+            run_calib_discover = 1;
         } else {
             fprintf(stderr, "%s: unrecognized argument '%s'.\n\n", argv[0], argv[1]);
             help(argv[0], default_iters);
@@ -545,6 +671,8 @@ int main(int argc, char **argv) {
 
     if (run_calib) {
         run_ecmult_multi_calib(&data);
+    } else if (run_calib_discover) {
+        run_ecmult_multi_calib_discover(&data);
     } else {
         print_output_table_header_row();
         /* Initialize offset1 and offset2 */

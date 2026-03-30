@@ -1,0 +1,8 @@
+raw_data.csv
+raw_data.csv.log
+ranges_table.md
+optimal_ranges.json
+crossover_annotations.gp
+winners_plot.gp
+*.dat
+*.png
